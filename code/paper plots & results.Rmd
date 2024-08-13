@@ -75,7 +75,7 @@ diff_data2020 <- combined1920 %>%
     mobility = mobility_2020 - mobility_2019,
     EXPENDITURE_Pchange = 100*(EXPENDITURE_2020 - EXPENDITURE_2019)/EXPENDITURE_2019
   ) %>%
-  select(YEARMONTHWEEK_2020, BIZ_2020,DIST_2020,YEAR_2020, EXPENDITURE, mobility,MONTH_2020,EXPENDITURE_Pchange) %>%
+  dplyr::select(YEARMONTHWEEK_2020, BIZ_2020,DIST_2020,YEAR_2020, EXPENDITURE, mobility,MONTH_2020,EXPENDITURE_Pchange) %>%
   rename(
     YEARMONTHWEEK = YEARMONTHWEEK_2020,
     BIZ = BIZ_2020,
@@ -93,7 +93,7 @@ diff_data2021 <- combined1921 %>%
     mobility = mobility_2021 - mobility_2019,
     EXPENDITURE_Pchange = 100*(EXPENDITURE_2021 - EXPENDITURE_2019)/EXPENDITURE_2019
   ) %>%
-  select(YEARMONTHWEEK_2021, BIZ_2021,DIST_2021,YEAR_2021, EXPENDITURE, mobility,MONTH_2021,EXPENDITURE_Pchange) %>%
+  dplyr::select(YEARMONTHWEEK_2021, BIZ_2021,DIST_2021,YEAR_2021, EXPENDITURE, mobility,MONTH_2021,EXPENDITURE_Pchange) %>%
   rename(
     YEARMONTHWEEK = YEARMONTHWEEK_2021,
     BIZ = BIZ_2021,
@@ -111,7 +111,7 @@ diff_data2022 <- combined1922 %>%
     mobility = mobility_2022 - mobility_2019,
     EXPENDITURE_Pchange = 100*(EXPENDITURE_2022 - EXPENDITURE_2019)/EXPENDITURE_2019
   ) %>%
-  select(YEARMONTHWEEK_2022, BIZ_2022,DIST_2022,YEAR_2022, EXPENDITURE, mobility,MONTH_2022,EXPENDITURE_Pchange) %>%
+  dplyr::select(YEARMONTHWEEK_2022, BIZ_2022,DIST_2022,YEAR_2022, EXPENDITURE, mobility,MONTH_2022,EXPENDITURE_Pchange) %>%
   rename(
     YEARMONTHWEEK = YEARMONTHWEEK_2022,
     BIZ = BIZ_2022,
@@ -197,32 +197,35 @@ all_diff_Seoul <- all_diff_Seoul %>%
 all_diff_Seoul$x_label <- paste0(substr(all_diff_Seoul$x_label, 6, 7))
 
 # 绘图代码
-ggplot(all_diff_Seoul, aes(x = YEARMONTHWEEK)) + 
+figure1 <- ggplot(all_diff_Seoul, aes(x = YEARMONTHWEEK)) + 
   geom_line(aes(y = diffmobility/scale_all, group = 1, colour = "Mobility difference"), size = 1) +
   geom_line(aes(y = diffexp, group = 1, colour = "Expenditure difference"), size = 1) +
   scale_colour_manual("", 
                       breaks = c("Mobility difference", "Expenditure difference"),
-                      values = c("black", "blue")) +  # Use black and blue for the lines
+                      values = c("red", "blue")) +  # Use black and blue for the lines
   scale_y_continuous(name = "Expenditure difference(in thousand USD)",
                      sec.axis = sec_axis(~ . *scale_all/1000, name = "Mobility difference(in thousand)")) + 
   labs(title = "Difference in mobility and all expenditure based on 2019 over the next 3 years",
        x = "Year-Month") + 
-  theme(axis.text.x = element_text(size = 10)) +
+  theme(axis.text.x = element_text(size = 14)) +
   geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2020-02-02"), color = "black") + 
   annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2020-02-02"), y = 0, label = "Introduction of COVID-19\nwith social distancing policies", angle = 0, hjust = 0.1, vjust = -4, size = 5,fontface = "bold") + 
   geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2021-03-01"), color = "black") + 
   annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2021-03-01"), y = 0, label = "Introduction of\nvaccination", angle = 0, hjust = 0.5, vjust = -4, size = 5,fontface = "bold") + 
   geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2022-02-01"), color = "black") + 
   annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2022-02-01"), y = 0, label = "Relaxing of social\ndistancing policies", angle = 0, hjust = 0.5, vjust = -4, size = 5,fontface = "bold") + 
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1.4) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey", size = 1.4) + 
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", color = NA),
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        panel.grid.major = element_line(color = "grey90"),  
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
         plot.title = element_text(size = 20, face = "bold"), # Title
-        axis.title = element_text(size = 16, face = "bold"), # Axis titles
-        axis.text = element_text(size = 12, face = "bold"), # Axis text
-        legend.title = element_text(size = 14, face = "bold"), # Legend title
-        legend.text = element_text(size = 12, face = "bold")) + # Legend text
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom")) +
   scale_x_discrete(labels = all_diff_Seoul$x_label) +  # 使用新的 x_label 作为 x 轴标签
   annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1], 
            xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))], 
@@ -263,10 +266,47 @@ ggplot(all_diff_Seoul, aes(x = YEARMONTHWEEK)) +
              (which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022"))] - 
                 which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1]) / 2, 
            y = -Inf, label = "2022", vjust = -2, size = 5, fontface = "bold") 
-
 ```
 
-## figure 2&3 Quadrant plot
+## figure 2
+```{r echo=FALSE}
+barplotdata <- barplotdata %>%
+  mutate(`BIZ` = paste0(toupper(substr(`BIZ`, 1, 1)), tolower(substr(`BIZ`, 2, nchar(`BIZ`)))))
+# 定义颜色向量
+custom_colors <- c(
+  "Travel" = "lightblue",
+  "Restaurant" = "red",          
+  "Shopping" = "lightgrey",
+  "Medical" = "yellow",          
+  "Clothing" = "blue",
+  "Entertainment" = "green",
+  "Education" = "orange",
+  "Home appliances" = "purple"
+)
+barplotdata$BIZ <- factor(barplotdata$BIZ, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
+
+figure2 <- ggplot(barplotdata, aes(x = YEAR, y = overallexp/1000, fill = BIZ)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
+  facet_wrap(~BIZ, scales = 'fixed', ncol = 8) +
+  labs(title = "Total expenditure by years and business categories",
+       y = "Expenditure in thousand USD",
+       x = "Year") +  # 修改图例标题
+  scale_fill_manual(values = custom_colors) +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.position = "none",
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
+## figure 3_A/B/C Quadrant plot
 ```{r echo=FALSE}
 data2019$YEARMONTHWEEK <- as.factor(data2019$YEARMONTHWEEK)
 data2020$YEARMONTHWEEK <- as.factor(data2020$YEARMONTHWEEK)
@@ -293,9 +333,9 @@ data2022overall <- data2022 %>%
 
 
 data_change_rate_2019_2020 <- data2019overall %>%
-  select(DIST, EXPENDITURE2019 = EXPENDITURE, mobility2019 = mobility) %>%
+  dplyr::select(DIST, EXPENDITURE2019 = EXPENDITURE, mobility2019 = mobility) %>%
   inner_join(
-    data2020overall %>% select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility),
+    data2020overall %>% dplyr::select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility),
     by = "DIST"
   ) %>%
   mutate(
@@ -308,9 +348,9 @@ data_change_rate_2019_2020$DIST <- gsub("-gu", "", data_change_rate_2019_2020$DI
 
 
 data_change_rate_2020_2022 <- data2020overall %>%
-  select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility) %>%
+  dplyr::select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility) %>%
   inner_join(
-    data2022overall %>% select(DIST, EXPENDITURE2022 = EXPENDITURE, mobility2022 = mobility),
+    data2022overall %>% dplyr::select(DIST, EXPENDITURE2022 = EXPENDITURE, mobility2022 = mobility),
     by = "DIST"
   ) %>%
   mutate(
@@ -321,7 +361,21 @@ data_change_rate_2020_2022 <- data_change_rate_2020_2022 %>%
   inner_join(district_info, by = "DIST")
 data_change_rate_2020_2022$DIST <- gsub("-gu", "", data_change_rate_2020_2022$DIST)
 
-ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate, 
+data_change_rate_2019_2022 <- data2019overall %>%
+  dplyr::select(DIST, EXPENDITURE2019 = EXPENDITURE, mobility2019 = mobility) %>%
+  inner_join(
+    data2022overall %>% dplyr::select(DIST, EXPENDITURE2022 = EXPENDITURE, mobility2022 = mobility),
+    by = "DIST"
+  ) %>%
+  mutate(
+    EXPENDITURE_change_rate = (EXPENDITURE2022 - EXPENDITURE2019) / EXPENDITURE2019 * 100,
+    mobility_change_rate = (mobility2022 - mobility2019) / mobility2019 * 100
+  )
+data_change_rate_2019_2022 <- data_change_rate_2019_2022 %>%
+  inner_join(district_info, by = "DIST")
+data_change_rate_2019_2022$DIST <- gsub("-gu", "", data_change_rate_2019_2022$DIST)
+
+figure3_A <- ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate, 
                                        y = EXPENDITURE_change_rate, 
                                        label = DIST, 
                                        size = Daytime_pop_percent, 
@@ -332,18 +386,18 @@ ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate,
   geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
   geom_vline(xintercept = 0, color = "black") +  
   geom_hline(yintercept = 0, color = "black") + 
-  labs(title = "Percentage change in expenditure and mobility between 2019 and 2020",
-       x = "Mobility change rate (%)",
+  labs(x = "Mobility change rate (%)",
        y = "Expenditure change rate (%)") +  # Add legend labels
   theme(legend.position = "none",
         panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"), 
         plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"))
 
 
 
-ggplot(data_change_rate_2020_2022, aes(x = mobility_change_rate, 
+figure3_B <- ggplot(data_change_rate_2020_2022, aes(x = mobility_change_rate, 
                                        y = EXPENDITURE_change_rate, 
                                        label = DIST, 
                                        size = Daytime_pop_percent, 
@@ -354,69 +408,70 @@ ggplot(data_change_rate_2020_2022, aes(x = mobility_change_rate,
   geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
   geom_vline(xintercept = 0, color = "black") +  
   geom_hline(yintercept = 0, color = "black") + 
-  labs(title = "Percentage change in expenditure and mobility between 2020 and 2022",
-       x = "Mobility change rate (%)",
+  labs(x = "Mobility change rate (%)",
        y = "Expenditure change rate (%)") +  # Add legend labels
   theme(legend.position = "none",
         panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"), 
+        plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"))
+
+
+
+figure3_C <- ggplot(data_change_rate_2019_2022, aes(x = mobility_change_rate, 
+                                       y = EXPENDITURE_change_rate, 
+                                       label = DIST, 
+                                       size = Daytime_pop_percent, 
+                                       color = Daytime_pop_percent)) +
+  scale_size_continuous(range = c(5, 15)) +
+  geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
+  scale_color_gradient(low = "gray", high = "darkblue") +
+  geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
+  geom_vline(xintercept = 0, color = "black") +  
+  geom_hline(yintercept = 0, color = "black") + 
+  labs(x = "Mobility change rate (%)",
+       y = "Expenditure change rate (%)") +  # Add legend labels
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"), 
         plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"))
 ```
 
-## figure 4.A
+## linear models for each BIZ(all)/districts(all)/years
 ```{r echo=FALSE}
-barplotdata <- barplotdata %>%
-  mutate(`BIZ` = paste0(toupper(substr(`BIZ`, 1, 1)), tolower(substr(`BIZ`, 2, nchar(`BIZ`)))))
-# 定义颜色向量
-custom_colors <- c(
-  "Travel" = "lightblue",
-  "Restaurant" = "red",          
-  "Shopping" = "lightgrey",
-  "Medical" = "yellow",          
-  "Clothing" = "blue",
-  "Entertainment" = "green",
-  "Education" = "orange",
-  "Home appliances" = "purple"
-)
-barplotdata$BIZ <- factor(barplotdata$BIZ, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
+USDdata_totalDIST <- USDdata %>%
+  group_by(BIZ, YEARMONTHWEEK,YEAR,MONTH,YEARMONTH) %>%
+  summarise(
+    EXPENDITURE = sum(EXPENDITURE, na.rm = TRUE),
+    mobility = sum(mobility, na.rm = TRUE)
+  ) %>%
+  mutate(DIST = "total")
+USDdata_with_totalDIST <- bind_rows(USDdata, USDdata_totalDIST)
+USDdata_allBIZ <- USDdata_with_totalDIST %>%
+  group_by(DIST, YEARMONTHWEEK,YEAR,MONTH,YEARMONTH) %>%
+  summarise(
+    EXPENDITURE = sum(EXPENDITURE, na.rm = TRUE),
+    mobility = sum(mobility, na.rm = TRUE)
+  ) %>%
+  mutate(BIZ = "allBIZ")
+USDdata_with_totalBIZDIST <- bind_rows(USDdata_with_totalDIST,USDdata_allBIZ)
 
-ggplot(barplotdata, aes(x = YEAR, y = overallexp/1000, fill = BIZ)) +
-  geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
-  facet_wrap(~BIZ, scales = 'fixed', ncol = 8) +
-  labs(title = "Total expenditure by years and business categories",
-       y = "Expenditure in thousand USD",
-       x = "Year",
-       fill = "Business categories") +  # 修改图例标题
-  scale_fill_manual(values = custom_colors) +
-  theme(plot.background = element_rect(fill = "white", colour = NA),
-        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
-        panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
-        axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
-        legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
-        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-```
+# 获取所有业务类别
+biz_categories <- unique(USDdata_with_totalBIZDIST$BIZ)
 
-## linear models for all BIZ/districts/years
-```{r echo=FALSE}
-
-biz_categories <- unique(USDdata$BIZ)  # 获取所有业务类别
+# 用于存储每个业务类别的结果和coefficients表
 all_years_results <- list()
-coefficients_list <- list()  # 用于存储每个业务类别的coefficients表
+coefficients_list <- list()
 
 for (biz in biz_categories) {
   yearly_sums <- list()
   
   for (year in 2019:2022) {
-    yearly_data <- USDdata %>%
+    # 过滤每年的数据并按DIST汇总支出
+    yearly_data <- USDdata_with_totalBIZDIST %>%
       filter(YEAR == year, BIZ == biz) %>%
       group_by(DIST) %>%
       summarise(sumexp = sum(EXPENDITURE, na.rm = TRUE))
@@ -427,12 +482,13 @@ for (biz in biz_categories) {
     yearly_sums[[as.character(year)]] <- yearly_data
   }
   
+  # 合并所有年份的数据
   sumexp_biz <- reduce(yearly_sums, full_join, by = "DIST")
   
   all_years_coefficients <- list()
   
   for (year in 2019:2022) {
-    data_year_biz <- subset(USDdata, BIZ == biz & YEAR == as.character(year))
+    data_year_biz <- subset(USDdata_with_totalBIZDIST, BIZ == biz & YEAR == as.character(year))
     coefficients_biz_year <- data.frame(DIST = character(), slope = numeric(), std_error = numeric(), p_value = numeric(), stringsAsFactors = FALSE)
     
     unique_dists <- unique(data_year_biz$DIST)
@@ -478,7 +534,6 @@ for (biz in biz_categories) {
   coefficients_list[[biz]] <- coefficients_biz  # 保存每个业务类别的coefficients表
 }
 
-
 # 将 coefficients_list 保存为单独的变量
 coefficients_travel <- coefficients_list[["travel"]]
 coefficients_restaurant <- coefficients_list[["restaurant"]]
@@ -488,17 +543,11 @@ coefficients_clothing <- coefficients_list[["clothing"]]
 coefficients_entertainment <- coefficients_list[["entertainment"]]
 coefficients_education <- coefficients_list[["education"]]
 coefficients_homelife <- coefficients_list[["homelife"]]
-
-## for table 1,don't run it twice
-
-## final_df <- final_df %>% select(DIST, BIZ, Year, slope, std_error, p_value) 
-
-## write.xlsx(final_df, file = "/Users/huzeyu/Desktop/Exp~mob paper/all_biz_model_results.xlsx")
-
+coefficients_allBIZ <- coefficients_list[["allBIZ"]]
 
 ```
 
-## figure 4.B
+## figure 4
 ```{r echo=FALSE}
 coefficients_restaurant$category <- 'restaurant'
 coefficients_entertainment$category <- 'entertainment'
@@ -517,7 +566,7 @@ newdata <- newdata %>%
   mutate(year = sub("slope", "", year)) # 移除 'slope' 文字，只保留年份
 newdata$category <- paste0(toupper(substr(newdata$category, 1, 1)), tolower(substr(newdata$category, 2, nchar(newdata$category))))
 newdata$category <- factor(newdata$category, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
-ggplot(newdata, aes(x = year, y = slope, fill = category)) + 
+figure4 <- ggplot(newdata, aes(x = year, y = slope, fill = category)) + 
   geom_boxplot() +
   facet_wrap(~category, scales = 'fixed', ncol = 8) +  # 使用DIST变量创建分面，并允许每个分面有自己的y轴范围
   #theme_minimal() +
@@ -529,501 +578,242 @@ ggplot(newdata, aes(x = year, y = slope, fill = category)) +
   geom_hline(yintercept = 0, color = "red",linetype = "dashed", size = 1.3)+
   ylim(-1,1.5)+
   theme(plot.background = element_rect(fill = "white", colour = NA),
-        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
-        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),  
         text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        plot.title = element_text(size = 20, face = "bold"), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
-        legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
-        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+        legend.position = "none", # Legend inside bottom right corner
+        axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 
 ## figure S1 daytime
 ```{r echo=FALSE}
 daytimedata <- district_info[,c(1,3)]
-daytimedata <- daytimedata %>%
-  mutate(label= if_else(DIST %in% commercial_districts,
-                        "commercial districts",
-                        "non-commercial districts"))
-
-
 # 为了使条形图按Daytime_pop_percent的值排序，首先需要将DIST转换为因子，并按Daytime_pop_percent排序
 daytimedata$DIST <- factor(daytimedata$DIST, levels = daytimedata$DIST[order(daytimedata$Daytime_pop_percent, decreasing = TRUE)])
 
-figure_S1 <- ggplot(daytimedata, aes(x = DIST, y = Daytime_pop_percent, fill = label)) +
+figure_S1 <- ggplot(daytimedata, aes(x = DIST, y = Daytime_pop_percent, fill = Daytime_pop_percent)) +
   geom_col() +
-  scale_fill_manual(values = c("commercial districts" = "darkblue", 
-                               "non-commercial districts" = "grey")) +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
   theme_bw(base_size = 20) +  # 设置基础字体大小
   labs(x = "District",
        y = "Daytime population index",
        title = "Daytime population index by district") +  # 添加标题
-  theme(
-    plot.background = element_rect(fill = "white", colour = NA),
-    panel.grid.major = element_blank(),  # 移除主网格线
-    panel.grid.minor = element_blank(),  # 移除次网格线
-    axis.text.x = element_text(angle = 60, hjust = 1, size = 18, face = "bold"),  # X轴文字旋转并设置大小
-    axis.title = element_text(size = 20, face = "bold"),  # X和Y轴标题
-    plot.title = element_text(size = 25, face = "bold", hjust = 0.5),  # 标题加粗并剧中
-    legend.position = "none"  # 隐藏图例
-  )
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),  
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 20, face = "bold"), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        axis.text.x = element_text(angle = 60, hjust = 1, size = 18, face = "bold"),  
+        legend.position = "none" 
+)
 print(figure_S1)
 ```
 
-## model for restaurant
-```{r include=FALSE}
-## restaurant all generate data
-restaurant_2019all <- subset(data2019, BIZ == "restaurant")
-lm_restaurant_2019all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2019all)
-restaurant_2020all <- subset(data2020, BIZ == "restaurant")
-lm_restaurant_2020all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2020all)
-restaurant_2021all <- subset(data2021, BIZ == "restaurant")
-lm_restaurant_2021all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2021all)
-restaurant_2022all <- subset(data2022, BIZ == "restaurant")
-lm_restaurant_2022all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2022all)
-restaurant_all <- subset(USDdata, BIZ == "restaurant")
-# 创建一个新的数据框，用于收集所有的预测
-predictions <- data.frame()
-# 对每个模型进行预测，已经有了自变量的范围数据
-for(year in 2019:2022) {
-  # 获取当前模型和数据
-  model <- get(paste0("lm_restaurant_", year, "all"))
-  data <- get(paste0("restaurant_", year, "all"))
-  
-  # 创建新数据，用于预测
-  # 使用数据最大最小mobility
-  new_data <- expand.grid(
-    mobility = seq(from = min(restaurant_all$mobility), to = max(restaurant_all$mobility), length.out = 100),
-    MONTH = c("01")
-  )
-  
-  # 生成预测
-  new_data$Prediction <- predict(model, newdata = new_data)
-  new_data$Year <- as.factor(year)
-  
-  # 将新的预测数据添加到总的数据框中
-  predictions <- rbind(predictions, new_data)
-}
 
-#commercial
-restaurant_2019_commercial <- subset(data2019, BIZ == "restaurant" & DIST %in% commercial_districts)
-lm_restaurant_2019_commercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2019_commercial)
-restaurant_2020_commercial <- subset(data2020, BIZ == "restaurant" & DIST %in% commercial_districts)
-lm_restaurant_2020_commercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2020_commercial)
-restaurant_2021_commercial <- subset(data2021, BIZ == "restaurant" & DIST %in% commercial_districts)
-lm_restaurant_2021_commercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2021_commercial)
-restaurant_2022_commercial <- subset(data2022, BIZ == "restaurant" & DIST %in% commercial_districts)
-lm_restaurant_2022_commercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2022_commercial)
-
-#noncommercial
-restaurant_2019_noncommercial <- subset(data2019, BIZ == "restaurant" & DIST %in% noncommercial_districts)
-lm_restaurant_2019_noncommercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2019_noncommercial)
-restaurant_2020_noncommercial <- subset(data2020, BIZ == "restaurant" & DIST %in% noncommercial_districts)
-lm_restaurant_2020_noncommercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2020_noncommercial)
-restaurant_2021_noncommercial <- subset(data2021, BIZ == "restaurant" & DIST %in% noncommercial_districts)
-lm_restaurant_2021_noncommercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2021_noncommercial)
-restaurant_2022_noncommercial <- subset(data2022, BIZ == "restaurant" & DIST %in% noncommercial_districts)
-lm_restaurant_2022_noncommercial <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2022_noncommercial)
-
-```
-
-## figure S2 restaurant 4 years line
+## figure S2
 ```{r echo=FALSE}
-## restaurant all generate data
-restaurant_2019all <- subset(data2019, BIZ == "restaurant")
-lm_restaurant_2019all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2019all)
-restaurant_2020all <- subset(data2020, BIZ == "restaurant")
-lm_restaurant_2020all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2020all)
-restaurant_2021all <- subset(data2021, BIZ == "restaurant")
-lm_restaurant_2021all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2021all)
-restaurant_2022all <- subset(data2022, BIZ == "restaurant")
-lm_restaurant_2022all <- lm(EXPENDITURE ~ mobility + MONTH, data = restaurant_2022all)
 restaurant_all <- subset(USDdata, BIZ == "restaurant")
-# 创建一个新的数据框，用于收集所有的预测
-predictions_all <- data.frame()
-# 对每个模型进行预测，已经有了自变量的范围数据
-for(year in 2019:2022) {
-  # 获取当前模型和数据
-  model <- get(paste0("lm_restaurant_", year, "all"))
-  data <- get(paste0("restaurant_", year, "all"))
-  
-  # 创建新数据，用于预测
-  # 使用数据最大最小mobility
-  new_data <- expand.grid(
-    mobility = seq(from = min(restaurant_all$mobility), to = max(restaurant_all$mobility), length.out = 100),
-    MONTH = c("01")
-  )
-  
-  # 生成预测
-  new_data$Prediction <- predict(model, newdata = new_data)
-  new_data$Year <- as.factor(year)
-  
-  # 将新的预测数据添加到总的数据框中
-  predictions_all <- rbind(predictions_all, new_data)
-}
-
-
-
-
-
-
-
-
-## restaurant commercial generate data
-restaurant_commercial <- subset(USDdata, BIZ == "restaurant" & DIST %in% commercial_districts)
-# 创建一个新的数据框，用于收集所有的预测
-predictions_commercial <- data.frame()
-# 对每个模型进行预测，已经有了自变量的范围数据
-for(year in 2019:2022) {
-  # 获取当前模型和数据
-  model <- get(paste0("lm_restaurant_", year, "_commercial"))
-  data <- get(paste0("restaurant_", year, "_commercial"))
-  
-  # 创建新数据，用于预测
-  # 使用数据最大最小mobility
-  new_data <- expand.grid(
-    mobility = seq(from = min(restaurant_all$mobility), to = max(restaurant_all$mobility), length.out = 100),
-    MONTH = c("01")
-  )
-  
-  # 生成预测
-  new_data$Prediction <- predict(model, newdata = new_data)
-  new_data$Year <- as.factor(year)
-  
-  # 将新的预测数据添加到总的数据框中
-  predictions_commercial <- rbind(predictions_commercial, new_data)
-}
-restaurant_noncommercial <- subset(USDdata, BIZ == "restaurant" & DIST %in% noncommercial_districts)
-predictions_noncommercial <- data.frame()
-# 对每个模型进行预测，已经有了自变量的范围数据
-for(year in 2019:2022) {
-  # 获取当前模型和数据
-  model <- get(paste0("lm_restaurant_", year, "_noncommercial"))
-  data <- get(paste0("restaurant_", year, "_noncommercial"))
-  
-  # 创建新数据，用于预测
-  # 使用数据最大最小mobility
-  new_data <- expand.grid(
-    mobility = seq(from = min(restaurant_all$mobility), to = max(restaurant_all$mobility), length.out = 100),
-    MONTH = c("01")
-  )
-  
-  # 生成预测
-  new_data$Prediction <- predict(model, newdata = new_data)
-  new_data$Year <- as.factor(year)
-  
-  # 将新的预测数据添加到总的数据框中
-  predictions_noncommercial <- rbind(predictions_noncommercial, new_data)
-}
-
-
-
-predictions_all$label <- 'all districts'
-predictions_commercial$label <- 'commercial areas'
-predictions_noncommercial$label <- 'residential areas'
-predictions <-rbind(predictions_all,predictions_commercial,predictions_noncommercial)
-restaurant_all$label <- 'all districts'
-restaurant_commercial$label <- 'commercial areas'
-restaurant_noncommercial$label <- 'non-commercial areas'
-restaurant_plot_data <- rbind(restaurant_all, restaurant_commercial,restaurant_noncommercial)
-restaurant_plot_data$label <- gsub("non-commercial areas", "residential areas", restaurant_plot_data$label)
-## 2019 only
-restaurant_plot_data_2019 <- restaurant_plot_data %>% 
-  filter(YEAR == 2019)
-predictions_2019 <- predictions %>% 
-  filter(Year == 2019)
-restaurantplot1 <- ggplot() +
-  geom_point(data = restaurant_plot_data_2019, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
-  geom_line(data = predictions_2019, aes(x = mobility/1000, y = Prediction, color = Year, group = Year, linetype = Year)) +
-  scale_color_manual(values = c("black")) +  # 只需要一个颜色
-  scale_linetype_manual(values = c("solid")) +  # 只需要一个线型
-  labs(title = "Restaurant Expenditure by Mobility (2019)", x = "Mobility(*1000)", y = "Expenditure (in $000)", color = "Year") +
-  facet_wrap(~label, scales = "fixed") + 
-  theme(plot.background = element_rect(fill = "white", colour = NA),
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 20, face = "bold"), # Title
-        axis.title = element_text(size = 16, face = "bold"), # Axis titles
-        axis.text = element_text(size = 12, face = "bold"), # Axis text
-        legend.title = element_text(size = 14, face = "bold"), # Legend title
-        legend.text = element_text(size = 12, face = "bold")) + # Legend text
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-## 19 20
-restaurant_plot_data_1920 <- restaurant_plot_data %>%
-  filter(YEAR %in% c(2019, 2020))
-
-predictions_1920 <- predictions %>%
-  filter(Year %in% c(2019, 2020))
-
-restaurantplot2 <- ggplot() +
-  geom_point(data = restaurant_plot_data_1920, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
-  geom_line(data = predictions_1920, aes(x = mobility/1000, y = Prediction, color = Year, group = Year, linetype = Year)) +
-  scale_color_manual(values = c("2019" = "black", "2020" = "red")) +  # 为2019和2020设置颜色
-  scale_linetype_manual(values = c("2019" = "solid", "2020" = "solid")) +  # 为2019和2020设置线型
-  labs(title = "Restaurant Expenditure by Mobility (2019-2020)", x = "Mobility(*1000)", y = "Expenditure (in $000)", color = "Year") +
-  facet_wrap(~label, scales = "fixed") + 
-  theme(plot.background = element_rect(fill = "white", colour = NA),
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 20, face = "bold"), # Title
-        axis.title = element_text(size = 16, face = "bold"), # Axis titles
-        axis.text = element_text(size = 12, face = "bold"), # Axis text
-        legend.title = element_text(size = 14, face = "bold"), # Legend title
-        legend.text = element_text(size = 12, face = "bold")) + # Legend text
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-## 19 20 21
-restaurant_plot_data_192021 <- restaurant_plot_data %>%
-  filter(YEAR %in% c(2019, 2020, 2021))
-
-predictions_192021 <- predictions %>%
-  filter(Year %in% c(2019, 2020, 2021))
-
-# 绘制图表，只包括2019年、2020年和2021年的数据
-restaurantplot3 <- ggplot() +
-  geom_point(data = restaurant_plot_data_192021, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
-  geom_line(data = predictions_192021, aes(x = mobility/1000, y = Prediction, color = Year, group = Year, linetype = Year)) +
-  scale_color_manual(values = c("2019" = "black", "2020" = "grey", "2021" = "red")) +  # 为2019, 2020和2021设置颜色
-  scale_linetype_manual(values = c("2019" = "solid", "2020" = "solid", "2021" = "solid")) +  # 为2019, 2020和2021设置线型
-  labs(title = "Restaurant Expenditure by Mobility (2019-2021)", x = "Mobility(*1000)", y = "Expenditure (in $000)", color = "Year") +
-  facet_wrap(~label, scales = "fixed") + 
-  theme(plot.background = element_rect(fill = "white", colour = NA),
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 20, face = "bold"), # Title
-        axis.title = element_text(size = 16, face = "bold"), # Axis titles
-        axis.text = element_text(size = 12, face = "bold"), # Axis text
-        legend.title = element_text(size = 14, face = "bold"), # Legend title
-        legend.text = element_text(size = 12, face = "bold")) + # Legend text
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-## 19202122
-figure_S2 <- ggplot() +
-  geom_point(data = restaurant_plot_data, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
-  geom_line(data = predictions, aes(x = mobility/1000, y = Prediction, color = Year, group = Year, linetype = Year)) +
-  scale_color_manual(values = c("2019" = "black", "2020" = "grey", "2021" = "grey", "2022"="red")) +  # 为2019, 2020和2021设置颜色
-  scale_linetype_manual(values = c("2019" = "solid", "2020" = "solid", "2021" = "dashed", "2022" = "solid")) +  # 为2019, 2020和2021设置线型
-  labs(title = "Restaurant expenditure by mobility (2019-2022)", x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
-  facet_wrap(~label, scales = "fixed") + 
+ggplot() +
+  geom_point(data = restaurant_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#FFB6C1", "2021" = "#FF6347", "2022"="#8B0000")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
         panel.grid.minor = element_line(color = NA),  # 去除次网格线
         text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
         strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-print(figure_S2)
+travel_all <- subset(USDdata, BIZ == "travel")
+ggplot() +
+  geom_point(data = travel_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#ADD8E6", "2021" = "#87CEEB", "2022" = "#4682B4")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-```
-
-## figure S3 data process
-```{r echo=FALSE}
-yearly_sums <- list()
-
-# 循环处理2019年到2022年的数据
-for(year in 2019:2022) {
-  yearly_data <- USDdata %>%
-    filter(YEAR == year, BIZ == "restaurant") %>%
-    group_by(DIST) %>%
-    summarise(`sumexp` = sum(EXPENDITURE, na.rm = TRUE)) 
-  
-  # 为汇总列直接添加年份后缀，不使用rename
-  colname <- paste0(year, "sumexp")
-  names(yearly_data)[2] <- colname
-  
-  # 将每年的结果存储在list中
-  yearly_sums[[as.character(year)]] <- yearly_data
-}
-
-# 得到2019-2022 sum exp
-sumexp_restaurant <- reduce(yearly_sums, full_join, by = "DIST")
-
-# 初始化一个空的数据框架来存储所有年份的结果
-all_years_coefficients <- list()
-
-# 遍历2019年到2022年
-for(year in 2019:2022) {
-  # 筛选出当前年份的餐厅数据
-  data_year_restaurant <- subset(USDdata, BIZ == "restaurant" & YEAR == as.character(year))
-  # 初始化当前年份的结果数据框
-  coefficients_restaurant_year <- data.frame(DIST = character(), slope = numeric(), stringsAsFactors = FALSE)
-  
-  unique_dists <- unique(data_year_restaurant$DIST)
-  for(dist in unique_dists) {
-    # Subset data for the current DIST
-    subset_data <- data_year_restaurant[data_year_restaurant$DIST == dist, ]
-    
-    # 标准化expenditure和mobility
-    subset_data$EXPENDITURE <- scale(subset_data$EXPENDITURE)
-    subset_data$mobility <- scale(subset_data$mobility)
-    
-    # Build the linear model with standardized variables
-    model <- lm(EXPENDITURE ~ mobility + YEARMONTH, data = subset_data) 
-    
-    # Extract the slope coefficient for 'mobility'
-    slope <- coef(model)["mobility"]
-    
-    # Append the DIST and corresponding slope to the results dataframe
-    coefficients_restaurant_year <- rbind(coefficients_restaurant_year, data.frame(DIST = dist, slope = slope))
-  }
-  
-  # 将当前年份的结果存储在列表中
-  all_years_coefficients[[as.character(year)]] <- coefficients_restaurant_year
-}
+shopping_all <- subset(USDdata, BIZ == "shopping")
+ggplot() +
+  geom_point(data = shopping_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#E0E0E0", "2021" = "#D3D3D3", "2022" = "#A9A9A9")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
+medical_all <- subset(USDdata, BIZ == "medical")
+ggplot() +
+  geom_point(data = medical_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#B0E0E6", "2021" = "#0000FF", "2022" = "#00008B")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-# 首先为每个数据框的斜率列添加年份后缀
-names_list <- c("2019", "2020", "2021", "2022") # 年份列表
-for(year in names_list) {
-  # 修改斜率列的名称，添加年份后缀
-  names(all_years_coefficients[[year]])[2] <- paste0("slope", year)
-}
 
-# 使用Reduce和merge按DIST合并所有数据框
-coefficients_restaurant <- Reduce(function(x, y) merge(x, y, by = "DIST", all = TRUE), all_years_coefficients)
+clothing_all <- subset(USDdata, BIZ == "clothing")
+ggplot() +
+  geom_point(data = clothing_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#B0E0E6", "2021" = "#0000FF", "2022" = "#00008B")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-# 内连接
-restaurant_slope_characteristic <- coefficients_restaurant %>%
-  left_join(sumexp_restaurant, by = "DIST") %>%
-  left_join(district_info, by = "DIST")
 
-long_df_restaurant <- pivot_longer(restaurant_slope_characteristic,
-                                   cols = starts_with("slope"),
-                                   names_to = "Year",
-                                   values_to = "Slope")
-```
+entertainment_all <- subset(USDdata, BIZ == "entertainment")
+ggplot() +
+  geom_point(data = entertainment_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "lightgreen", "2021" = "green", "2022" = "darkgreen"
+)) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-## figure S3
-```{r echo=FALSE}
-restaurant_slope_characteristic <- coefficients_restaurant %>%
-  left_join(sumexp_restaurant, by = "DIST") %>%
-  left_join(district_info, by = "DIST")
-data_long <- tidyr::pivot_longer(restaurant_slope_characteristic, cols = starts_with("slope"),
-                                 names_to = "Year", values_to = "Slope")
 
-# 将年份转换为一个因子，以便在图例中以不同颜色显示
+education_all <- subset(USDdata, BIZ == "education")
+ggplot() +
+  geom_point(data = education_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#FFDAB9", "2021" = "#FFA500", "2022" = "#FF8C00"
+)) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
-data_long$Year <- substr(data_long$Year, 6, nchar(data_long$Year))
-data_long$Year <- factor(data_long$Year, levels = c("2019", "2020", "2021", "2022"))
-# 绘制散点图
-figure_S3 <- ggplot(data_long, aes(x = Daytime_pop_percent, y = Slope, color = Year, shape = as.factor(DIST))) +
-  geom_point(size = 5) + 
-  scale_shape_manual(values = 1:25) + 
-  theme_minimal() +
-  labs(x = "Daytime population index", y = "Elasticity of restaurant", color = "Year", shape = "District") + # 自定义标签
-  scale_color_brewer(palette = "Set1") +
-  theme(
-    text = element_text(size = 20, face = "bold"), # 默认字体大小和样式
-    axis.title = element_text(size = 25, face = "bold"), # 轴标题
-    axis.text = element_text(size = 20, face = "bold"), # 轴文本
-    legend.title = element_text(size = 20, face = "bold"), # 图例标题
-    legend.text = element_text(size = 20, face = "bold"), # 图例文本
-    plot.title = element_text(size = 22, face = "bold"), # 图标题
-    strip.text = element_text(size = 18, face = "bold") # 分面标签文本
-  )
-print(figure_S3)
-```
-
-## map(not shown in paper)
-```{r echo=FALSE}
-incidence_data <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/Seoul 2020 total incidences in each districts.csv")
-##get map with label
-seoul <- st_read("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/seoul_neighborhoods.shx")
-seoul <- st_read("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/seoul_neighborhoods.shp")
-
-seoul_municipalities <- st_read("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/seoul_municipalities.shp")
-seoul_municipalities <- seoul_municipalities %>%
-  mutate(DIST = NA)
-DIST <- c("Dobong-gu","Eunpyeong-gu","Dongdaemun-gu","Dongjak-gu","Geumcheon-gu",
-          "Guro-gu","Jongno-gu","Gangbuk-gu","Jungnang-gu","Gangnam-gu",
-          "Gangseo-gu","Jung-gu","Gangdong-gu","Gwangjin-gu","Mapo-gu",
-          "Gwanak-gu","Seocho-gu","Seongbuk-gu","Nowon-gu","Songpa-gu",
-          "Seongdong-gu","Seodaemun-gu","Yangcheon-gu","Yeongdeungpo-gu","Yongsan-gu")
-seoul_municipalities$DIST <- DIST
-USDdatasummary <- USDdata %>%
-  group_by(DIST) %>%
-  summarise(
-    Total_exp = sum(EXPENDITURE),
-    Total_mobility = sum(mobility)
-  )
-
-seoul_municipalities <- left_join(seoul_municipalities, USDdatasummary[, c("DIST", "Total_exp", "Total_mobility")], by = "DIST")
-seoul_municipalities <- left_join(seoul_municipalities, district_info[, c("DIST", "Daytime_pop_percent")], by = "DIST")
-
-diff_data2020summary <- diff_data2020 %>%
-  group_by(DIST) %>%
-  summarise(
-    Total_exp_diff = sum(EXPENDITURE),
-    Total_mobility_diff = sum(mobility)
-  )
-
-seoul_municipalities <- left_join(seoul_municipalities,diff_data2020summary[,c("DIST","Total_exp_diff","Total_mobility_diff")], by = "DIST")
-seoul_municipalities <- left_join(seoul_municipalities,incidence_data[,c("DIST","incidence")], by = "DIST")
-## draw map with daytime index
-
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = -Total_mobility_diff)) + 
-  geom_sf_label(aes(label = ifelse(DIST %in% c("Gangnam-gu", "Jongno-gu", "Jung-gu"), as.character(DIST), NA)), size = 7) +
-  scale_fill_gradient(low = "lightcoral", high = "darkred") + 
-  theme_void() +
-  ggtitle("Map with Mobility Difference in 2020 (Based on 2019)")+
-  theme(plot.title = element_text(size = 20, face = "bold"))
-
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = -Total_exp_diff)) + 
-  geom_sf_label(aes(label = ifelse(DIST %in% c("Gangnam-gu", "Jongno-gu", "Jung-gu"), as.character(DIST), NA)), size = 7) +
-  scale_fill_gradient(low = "lightgreen", high = "darkgreen") + 
-  theme_void() +
-  ggtitle("Map with Expenditure Difference in 2020 (Based on 2019)")+
-  theme(plot.title = element_text(size = 20, face = "bold"))
-
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = Daytime_pop_percent)) + 
-  geom_sf_label(aes(label = ifelse(DIST %in% c("Gangnam-gu", "Jongno-gu", "Jung-gu"), as.character(DIST), NA)), size = 7) +
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +
-  theme_void() +
-  ggtitle("Map with Daytime Population Index")+
-  theme(plot.title = element_text(size = 20, face = "bold"))
+shopping_all <- subset(USDdata, BIZ == "shopping")
+ggplot() +
+  geom_point(data = shopping_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#E0E0E0", "2021" = "#D3D3D3", "2022" = "#A9A9A9")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
 
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = incidence)) + 
-  geom_sf_label(aes(label = DIST), size = 3) + 
-  scale_fill_gradient(low = "lightyellow", high = "darkgoldenrod") + 
-  theme_void() +
-  ggtitle("Map with incidneces in 2020")+
-  theme(plot.title = element_text(size = 25))
-
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = Total_mobility)) + 
-  geom_sf_label(aes(label = ifelse(DIST %in% c("Gangnam-gu", "Jongno-gu", "Jung-gu"), as.character(DIST), NA)), size = 7) +
-  scale_fill_gradient(low = "lightcoral", high = "darkred") + 
-  theme_void() +
-  ggtitle("Map with Mobility in 2020")+
-  theme(plot.title = element_text(size = 20, face = "bold"))
-
-ggplot(data = seoul_municipalities) +
-  geom_sf(aes(fill = Total_exp)) + 
-  geom_sf_label(aes(label = ifelse(DIST %in% c("Gangnam-gu", "Jongno-gu", "Jung-gu"), as.character(DIST), NA)), size = 7) +
-  scale_fill_gradient(low = "lightgreen", high = "darkgreen") + 
-  theme_void() +
-  ggtitle("Map with Expenditure in 2020")+
-  theme(plot.title = element_text(size = 20, face = "bold"))
+homelife_all <- subset(USDdata, BIZ == "homelife")
+ggplot() +
+  geom_point(data = homelife_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
+  scale_color_manual(values = c("2019" = "black", "2020" = "#D8BFD8", "2021" = "#800080", "2022" = "#4B0082")) +  # 为2019, 2020和2021设置颜色
+  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = c(1, 0.07), # Legend inside bottom right corner
+        legend.justification = c("right", "bottom"),
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
 ## mobility barplot:: Age figure S4.A
@@ -1045,24 +835,7 @@ all_stackbar <- rbind(
   transform(stackbar2021, Year = '2021'),
   transform(stackbar2022, Year = '2022')
 )
-figure_S4A <- ggplot(all_stackbar, aes(x = age, y = total_sum / 1000000, fill = as.factor(age))) +
-  geom_bar(stat = "identity") +
-  scale_fill_manual(values = c("#b3cde3", "#6497b1", "#005b96", "#03396c")) +  # 从浅蓝到深蓝的颜色
-  facet_wrap(~ Year) +
-  labs(fill = "Age group", x = "Age group", y = "Mobility in million", title = "Bar plot by age groups across years") +
-   theme(plot.background = element_rect(fill = "white", colour = NA),
-        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
-        panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
-        axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
-        legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
-        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16))  # facet_wrap 标题为加粗
+figure_S4A <- 
 print(figure_S4A)
 ```
 ## mobility barplot:: type figure S4.B
