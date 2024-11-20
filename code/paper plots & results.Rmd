@@ -15,6 +15,7 @@ library(broom)
 library(purrr)
 library(scales)
 library(tidyr)
+library(nlme)
 library(readxl)
 library(viridis)
 library(openxlsx)
@@ -219,13 +220,15 @@ figure1 <- ggplot(all_diff_Seoul, aes(x = YEARMONTHWEEK)) +
         panel.background = element_rect(fill = "white", color = NA),
         panel.grid.major = element_line(color = "grey90"),  
         text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 20, face = "bold"), # Title
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),  # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom")) +
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5))+ 
   scale_x_discrete(labels = all_diff_Seoul$x_label) +  # 使用新的 x_label 作为 x 轴标签
   annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1], 
            xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))], 
@@ -291,7 +294,7 @@ figure2 <- ggplot(barplotdata, aes(x = YEAR, y = overallexp/1000, fill = BIZ)) +
   labs(title = "Total expenditure by years and business categories",
        y = "Expenditure in thousand USD",
        x = "Year") +  # 修改图例标题
-  scale_fill_manual(values = custom_colors) +
+  scale_fill_manual(name = "Category",values = custom_colors) +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
         panel.grid.major = element_line(color = "grey90"),
@@ -300,13 +303,20 @@ figure2 <- ggplot(barplotdata, aes(x = YEAR, y = overallexp/1000, fill = BIZ)) +
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.position = "none",
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  coord_cartesian(ylim = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0))
 ```
 
-## figure 3_A/B/C Quadrant plot
+## figure 3_A/B Quadrant plot
 ```{r echo=FALSE}
 data2019$YEARMONTHWEEK <- as.factor(data2019$YEARMONTHWEEK)
 data2020$YEARMONTHWEEK <- as.factor(data2020$YEARMONTHWEEK)
@@ -374,74 +384,58 @@ data_change_rate_2019_2022 <- data2019overall %>%
 data_change_rate_2019_2022 <- data_change_rate_2019_2022 %>%
   inner_join(district_info, by = "DIST")
 data_change_rate_2019_2022$DIST <- gsub("-gu", "", data_change_rate_2019_2022$DIST)
+data_change_rate_2019_2022$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
+data_change_rate_2019_2020$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
+data_change_rate_2020_2022$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
 
-figure3_A <- ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate, 
-                                       y = EXPENDITURE_change_rate, 
-                                       label = DIST, 
-                                       size = Daytime_pop_percent, 
-                                       color = Daytime_pop_percent)) +
-  scale_size_continuous(range = c(5, 15)) +
+figure3_A <- ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate,
+                                       y = EXPENDITURE_change_rate,
+                                       label = DIST,
+                                       size = totalpop_inK,
+                                       color = Daytime_pop_percent)) + 
+  scale_size_continuous(range = c(5, 15), name = "Total Population\n(in thousand)") +   # 添加size的图例名称
   geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
-  scale_color_gradient(low = "gray", high = "darkblue") +
+  scale_color_gradient(low = "gray", high = "darkblue", name = "Daytime Population %") +   # 添加color的图例名称
   geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
-  geom_vline(xintercept = 0, color = "black") +  
+  geom_vline(xintercept = 0, color = "black") + 
   geom_hline(yintercept = 0, color = "black") + 
   labs(x = "Mobility change rate (%)",
-       y = "Expenditure change rate (%)") +  # Add legend labels
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "white", color = NA),
-        panel.grid.major = element_line(color = "grey90"), 
-        plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
+       y = "Expenditure change rate (%)") +  # 添加标题
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"))
+        axis.text = element_text(size = 16, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5)) +
+  guides(size = guide_legend(title.theme = element_text(face = "bold")),  # 调整size图例标题的字体
+         color = guide_colorbar(title.theme = element_text(face = "bold")))  # 调整color图例标题的字体
 
-
-
-figure3_B <- ggplot(data_change_rate_2020_2022, aes(x = mobility_change_rate, 
-                                       y = EXPENDITURE_change_rate, 
-                                       label = DIST, 
-                                       size = Daytime_pop_percent, 
-                                       color = Daytime_pop_percent)) +
-  scale_size_continuous(range = c(5, 15)) +
+figure3_B <- ggplot(data_change_rate_2019_2022, aes(x = mobility_change_rate,
+                                       y = EXPENDITURE_change_rate,
+                                       label = DIST,
+                                       size = totalpop_inK,
+                                       color = Daytime_pop_percent)) + 
+  scale_size_continuous(range = c(5, 15), name = "Total Population\n(in thousand)") +   # 添加size的图例名称
   geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
-  scale_color_gradient(low = "gray", high = "darkblue") +
+  scale_color_gradient(low = "gray", high = "darkblue", name = "Daytime Population %") +   # 添加color的图例名称
   geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
-  geom_vline(xintercept = 0, color = "black") +  
+  geom_vline(xintercept = 0, color = "black") + 
   geom_hline(yintercept = 0, color = "black") + 
   labs(x = "Mobility change rate (%)",
-       y = "Expenditure change rate (%)") +  # Add legend labels
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "white", color = NA),
-        panel.grid.major = element_line(color = "grey90"), 
-        plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
+       y = "Expenditure change rate (%)") +  # 添加标题
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"))
-
-
-
-figure3_C <- ggplot(data_change_rate_2019_2022, aes(x = mobility_change_rate, 
-                                       y = EXPENDITURE_change_rate, 
-                                       label = DIST, 
-                                       size = Daytime_pop_percent, 
-                                       color = Daytime_pop_percent)) +
-  scale_size_continuous(range = c(5, 15)) +
-  geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
-  scale_color_gradient(low = "gray", high = "darkblue") +
-  geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
-  geom_vline(xintercept = 0, color = "black") +  
-  geom_hline(yintercept = 0, color = "black") + 
-  labs(x = "Mobility change rate (%)",
-       y = "Expenditure change rate (%)") +  # Add legend labels
-  theme(legend.position = "none",
-        panel.background = element_rect(fill = "white", color = NA),
-        panel.grid.major = element_line(color = "grey90"), 
-        plot.title = element_text(size = 25, face = "bold",hjust = 0.5), # Title
-        axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"))
+        axis.text = element_text(size = 16, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5)) +
+  guides(size = guide_legend(title.theme = element_text(face = "bold")),  # 调整size图例标题的字体
+         color = guide_colorbar(title.theme = element_text(face = "bold")))  # 调整color图例标题的字体
 ```
 
-## linear models for each BIZ(all)/districts(all)/years
+## linear models for each BIZ(all)/district(all)/years AR1
 ```{r echo=FALSE}
+
 USDdata_totalDIST <- USDdata %>%
   group_by(BIZ, YEARMONTHWEEK,YEAR,MONTH,YEARMONTH) %>%
   summarise(
@@ -462,9 +456,9 @@ USDdata_with_totalBIZDIST <- bind_rows(USDdata_with_totalDIST,USDdata_allBIZ)
 # 获取所有业务类别
 biz_categories <- unique(USDdata_with_totalBIZDIST$BIZ)
 
-# 用于存储每个业务类别的结果和coefficients表
-all_years_results <- list()
-coefficients_list <- list()
+# 用于存储每个业务类别的新模型结果
+all_years_results_AR1 <- list()
+coefficients_list_AR1 <- list()
 
 for (biz in biz_categories) {
   yearly_sums <- list()
@@ -485,95 +479,108 @@ for (biz in biz_categories) {
   # 合并所有年份的数据
   sumexp_biz <- reduce(yearly_sums, full_join, by = "DIST")
   
-  all_years_coefficients <- list()
+  all_years_coefficients_AR1 <- list()
   
   for (year in 2019:2022) {
     data_year_biz <- subset(USDdata_with_totalBIZDIST, BIZ == biz & YEAR == as.character(year))
-    coefficients_biz_year <- data.frame(DIST = character(), slope = numeric(), std_error = numeric(), p_value = numeric(), stringsAsFactors = FALSE)
+    coefficients_biz_year_AR1 <- data.frame(DIST = character(), slope = numeric(), std_error = numeric(), p_value = numeric(), stringsAsFactors = FALSE)
     
     unique_dists <- unique(data_year_biz$DIST)
+    
     for (dist in unique_dists) {
       subset_data <- data_year_biz[data_year_biz$DIST == dist, ]
       
+      # 创建一个唯一的时间变量 time_index
+      subset_data <- subset_data %>%
+        arrange(YEARMONTH) %>%
+        mutate(time_index = 1:n())
+      
+      # 标准化数据
       subset_data$EXPENDITURE <- scale(subset_data$EXPENDITURE)
       subset_data$mobility <- scale(subset_data$mobility)
       
-      model <- lm(EXPENDITURE ~ mobility + YEARMONTH, data = subset_data)
+      # 使用 gls() 添加 AR(1) 结构，删除 YEARMONTH
+      model_AR1 <- gls(EXPENDITURE ~ mobility, data = subset_data, correlation = corAR1(form = ~ time_index))
       
-      tidy_model <- tidy(model)
-      slope_info <- tidy_model[tidy_model$term == "mobility", ]
+      # 提取模型的系数信息
+      model_summary_AR1 <- summary(model_AR1)
+      slope_info_AR1 <- model_summary_AR1$tTable["mobility", ]
       
-      coefficients_biz_year <- rbind(coefficients_biz_year, data.frame(DIST = dist, slope = slope_info$estimate, std_error = slope_info$std.error, p_value = slope_info$p.value))
+      # 将系数信息保存到数据框中
+      coefficients_biz_year_AR1 <- rbind(coefficients_biz_year_AR1, 
+                                         data.frame(DIST = dist,
+                                                    slope = slope_info_AR1["Value"],
+                                                    std_error = slope_info_AR1["Std.Error"],
+                                                    p_value = slope_info_AR1["p-value"]))
     }
     
-    all_years_coefficients[[as.character(year)]] <- coefficients_biz_year
+    all_years_coefficients_AR1[[as.character(year)]] <- coefficients_biz_year_AR1
   }
   
   names_list <- c("2019", "2020", "2021", "2022")
   for (year in names_list) {
-    names(all_years_coefficients[[year]])[2:4] <- paste0(names(all_years_coefficients[[year]])[2:4], year)
+    names(all_years_coefficients_AR1[[year]])[2:4] <- paste0(names(all_years_coefficients_AR1[[year]])[2:4], year)
   }
   
-  coefficients_biz <- Reduce(function(x, y) merge(x, y, by = "DIST", all = TRUE), all_years_coefficients)
+  coefficients_biz_AR1 <- Reduce(function(x, y) merge(x, y, by = "DIST", all = TRUE), all_years_coefficients_AR1)
   
-  biz_slope_characteristic <- coefficients_biz %>%
+  biz_slope_characteristic_AR1 <- coefficients_biz_AR1 %>%
     left_join(sumexp_biz, by = "DIST") %>%
     left_join(district_info, by = "DIST")
   
-  long_df_biz <- pivot_longer(biz_slope_characteristic,
-                              cols = starts_with("slope") | starts_with("std_error") | starts_with("p_value"),
-                              names_to = c("Measure", "Year"),
-                              names_pattern = "(.*)(2019|2020|2021|2022)",
-                              values_to = "Value")
+  long_df_biz_AR1 <- pivot_longer(biz_slope_characteristic_AR1,
+                                  cols = starts_with("slope") | starts_with("std_error") | starts_with("p_value"),
+                                  names_to = c("Measure", "Year"),
+                                  names_pattern = "(.*)(2019|2020|2021|2022)",
+                                  values_to = "Value")
   
-  long_df_biz <- long_df_biz %>%
+  long_df_biz_AR1 <- long_df_biz_AR1 %>%
     pivot_wider(names_from = Measure, values_from = Value)
   
-  long_df_biz$BIZ <- biz
-  all_years_results[[biz]] <- long_df_biz
-  coefficients_list[[biz]] <- coefficients_biz  # 保存每个业务类别的coefficients表
+  long_df_biz_AR1$BIZ <- biz
+  all_years_results_AR1[[biz]] <- long_df_biz_AR1
+  coefficients_list_AR1[[biz]] <- coefficients_biz_AR1  # 保存每个业务类别的新模型系数表
 }
 
-# 将 coefficients_list 保存为单独的变量
-coefficients_travel <- coefficients_list[["travel"]]
-coefficients_restaurant <- coefficients_list[["restaurant"]]
-coefficients_shopping <- coefficients_list[["shopping"]]
-coefficients_medical <- coefficients_list[["medical"]]
-coefficients_clothing <- coefficients_list[["clothing"]]
-coefficients_entertainment <- coefficients_list[["entertainment"]]
-coefficients_education <- coefficients_list[["education"]]
-coefficients_homelife <- coefficients_list[["homelife"]]
-coefficients_allBIZ <- coefficients_list[["allBIZ"]]
-
+# 将 coefficients_list_AR1 保存为新变量
+coefficients_travel_AR1 <- coefficients_list_AR1[["travel"]]
+coefficients_restaurant_AR1 <- coefficients_list_AR1[["restaurant"]]
+coefficients_shopping_AR1 <- coefficients_list_AR1[["shopping"]]
+coefficients_medical_AR1 <- coefficients_list_AR1[["medical"]]
+coefficients_clothing_AR1 <- coefficients_list_AR1[["clothing"]]
+coefficients_entertainment_AR1 <- coefficients_list_AR1[["entertainment"]]
+coefficients_education_AR1 <- coefficients_list_AR1[["education"]]
+coefficients_homelife_AR1 <- coefficients_list_AR1[["homelife"]]
+coefficients_allBIZ_AR1 <- coefficients_list_AR1[["allBIZ"]]
 ```
 
-## figure 4
+## figure 4 AR1
 ```{r echo=FALSE}
-coefficients_restaurant$category <- 'restaurant'
-coefficients_entertainment$category <- 'entertainment'
-coefficients_clothing$category <- 'clothing'
-coefficients_medical$category <- 'medical'
-coefficients_travel$category <- 'travel'
-coefficients_education$category <- 'education'
-coefficients_shopping$category <- 'shopping'
-coefficients_homelife$category <- 'home appliances'
-newdata <- bind_rows(coefficients_restaurant, coefficients_entertainment,coefficients_clothing,
-                     coefficients_medical, coefficients_travel, coefficients_education,
-                     coefficients_shopping, coefficients_homelife)
+coefficients_restaurant_AR1$category <- 'restaurant'
+coefficients_entertainment_AR1$category <- 'entertainment'
+coefficients_clothing_AR1$category <- 'clothing'
+coefficients_medical_AR1$category <- 'medical'
+coefficients_travel_AR1$category <- 'travel'
+coefficients_education_AR1$category <- 'education'
+coefficients_shopping_AR1$category <- 'shopping'
+coefficients_homelife_AR1$category <- 'home appliances'
+newdata_AR1 <- bind_rows(coefficients_restaurant_AR1, coefficients_entertainment_AR1,coefficients_clothing_AR1,
+                     coefficients_medical_AR1, coefficients_travel_AR1, coefficients_education_AR1,
+                     coefficients_shopping_AR1, coefficients_homelife_AR1)
 
-newdata <- newdata %>% 
+newdata_AR1 <- newdata_AR1 %>% 
   gather(key = "year", value = "slope", slope2019, slope2020, slope2021, slope2022) %>% 
   mutate(year = sub("slope", "", year)) # 移除 'slope' 文字，只保留年份
-newdata$category <- paste0(toupper(substr(newdata$category, 1, 1)), tolower(substr(newdata$category, 2, nchar(newdata$category))))
-newdata$category <- factor(newdata$category, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
-figure4 <- ggplot(newdata, aes(x = year, y = slope, fill = category)) + 
+newdata_AR1$category <- paste0(toupper(substr(newdata_AR1$category, 1, 1)), tolower(substr(newdata_AR1$category, 2, nchar(newdata_AR1$category))))
+newdata_AR1$category <- factor(newdata_AR1$category, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
+figure4 <- ggplot(newdata_AR1, aes(x = year, y = slope, fill = category)) + 
   geom_boxplot() +
   facet_wrap(~category, scales = 'fixed', ncol = 8) +  # 使用DIST变量创建分面，并允许每个分面有自己的y轴范围
   #theme_minimal() +
   labs(title = "Elasticity by year and business sectors in all districts", 
        x = "Year", 
        y = "Slope: consumption elasticity",
-       fill = "Business categories") +
+       fill = "Category") +
   scale_fill_manual(values = custom_colors) +
   geom_hline(yintercept = 0, color = "red",linetype = "dashed", size = 1.3)+
   ylim(-1,1.5)+
@@ -581,13 +588,18 @@ figure4 <- ggplot(newdata, aes(x = year, y = slope, fill = category)) +
         panel.background = element_rect(fill = "white", color = NA),
         panel.grid.major = element_line(color = "grey90"),  
         text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 20, face = "bold"), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),  # Title
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.position = "none", # Legend inside bottom right corner
-        axis.text.x = element_text(angle = 60, hjust = 1))
-```
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        axis.text.x = element_text(angle = 60, hjust = 1),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5))
 
+```
 
 ## figure S1 daytime
 ```{r echo=FALSE}
@@ -619,8 +631,8 @@ print(figure_S1)
 ## figure S2
 ```{r echo=FALSE}
 restaurant_all <- subset(USDdata, BIZ == "restaurant")
-ggplot() +
-  geom_point(data = restaurant_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 0.5) +
+figureS2_restaurant <- ggplot() +
+  geom_point(data = restaurant_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#FFB6C1", "2021" = "#FF6347", "2022"="#8B0000")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
@@ -633,14 +645,16 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 travel_all <- subset(USDdata, BIZ == "travel")
-ggplot() +
+figureS2_travel <- ggplot() +
   geom_point(data = travel_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#ADD8E6", "2021" = "#87CEEB", "2022" = "#4682B4")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
@@ -654,14 +668,16 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 shopping_all <- subset(USDdata, BIZ == "shopping")
-ggplot() +
+figureS2_shopping <- ggplot() +
   geom_point(data = shopping_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#E0E0E0", "2021" = "#D3D3D3", "2022" = "#A9A9A9")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
@@ -675,17 +691,19 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
 medical_all <- subset(USDdata, BIZ == "medical")
-ggplot() +
+figureS2_medical <- ggplot() +
   geom_point(data = medical_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
-  scale_color_manual(values = c("2019" = "black", "2020" = "#B0E0E6", "2021" = "#0000FF", "2022" = "#00008B")) +  # 为2019, 2020和2021设置颜色
+  scale_color_manual(values = c("2019" = "black", "2020" = "#FFFACD", "2021" = "#FFFF00", "2022" = "#FFD700")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
@@ -697,15 +715,17 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
 clothing_all <- subset(USDdata, BIZ == "clothing")
-ggplot() +
+figureS2_clothing <- ggplot() +
   geom_point(data = clothing_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#B0E0E6", "2021" = "#0000FF", "2022" = "#00008B")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
@@ -719,18 +739,20 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
 entertainment_all <- subset(USDdata, BIZ == "entertainment")
-ggplot() +
+figureS2_entertainment <- ggplot() +
   geom_point(data = entertainment_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "lightgreen", "2021" = "green", "2022" = "darkgreen"
-)) +  # 为2019, 2020和2021设置颜色
+  )) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
@@ -742,18 +764,20 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 
 
 education_all <- subset(USDdata, BIZ == "education")
-ggplot() +
+figureS2_education <- ggplot() +
   geom_point(data = education_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#FFDAB9", "2021" = "#FFA500", "2022" = "#FF8C00"
-)) +  # 为2019, 2020和2021设置颜色
+  )) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
@@ -765,37 +789,16 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-shopping_all <- subset(USDdata, BIZ == "shopping")
-ggplot() +
-  geom_point(data = shopping_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
-  scale_color_manual(values = c("2019" = "black", "2020" = "#E0E0E0", "2021" = "#D3D3D3", "2022" = "#A9A9A9")) +  # 为2019, 2020和2021设置颜色
-  labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
-  theme(plot.background = element_rect(fill = "white", colour = NA),
-        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = "grey90"),  # 去除主网格线
-        panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
-        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
-        axis.title = element_text(size = 20, face = "bold"), # Axis titles
-        axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 18, face = "bold"), # Legend title
-        legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
-        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
-
-
 
 homelife_all <- subset(USDdata, BIZ == "homelife")
-ggplot() +
+figureS2_homelife <- ggplot() +
   geom_point(data = homelife_all, aes(x = mobility/1000, y = EXPENDITURE, group = YEAR, color = YEAR), size = 1) +
   scale_color_manual(values = c("2019" = "black", "2020" = "#D8BFD8", "2021" = "#800080", "2022" = "#4B0082")) +  # 为2019, 2020和2021设置颜色
   labs(x = "Mobility(in thousand)", y = "Expenditure (in thousand USD)", color = "Year") +
@@ -809,18 +812,20 @@ ggplot() +
         axis.text = element_text(size = 16, face = "bold"), # Axis text
         legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.position = c(1, 0.07), # Legend inside bottom right corner
-        legend.justification = c("right", "bottom"),
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal", # 图例盒子的排列方式
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) +  
   theme(axis.text.x = element_text(angle = 60, hjust = 1))
 ```
 
-## mobility barplot:: Age figure S4.A
+## mobility barplot:: Age figure S3.A
 ```{r echo=FALSE}
-newdata2022 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/2022alldatasummary.csv")
-newdata2021 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/2021alldatasummary.csv")
-newdata2020 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/2020alldatasummary.csv")
+newdata2022 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/dataset/2022alldatasummary.csv")
+newdata2021 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/dataset/2021alldatasummary.csv.csv")
+newdata2020 <- read.csv("/Users/huzeyu/Desktop/UConnHealth/dataset/2020alldatasummary.csv")
 stackbar2020 <- newdata2020 %>%
   group_by(age) %>%
   summarise(total_sum = sum(total_sum),.groups = 'drop')
@@ -835,10 +840,32 @@ all_stackbar <- rbind(
   transform(stackbar2021, Year = '2021'),
   transform(stackbar2022, Year = '2022')
 )
-figure_S4A <- 
+figure_S4A <- ggplot(all_stackbar, aes(x = age, y = total_sum / 1000000, fill = as.factor(age))) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#b3cde3", "#6497b1", "#005b96", "#03396c")) +
+  facet_wrap(~ Year, scales = 'fixed', ncol = 3) +
+  labs(fill = "Age group", x = "Age group", y = "Mobility in million") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 25),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  coord_cartesian(ylim = c(0, 3500)) +
+  scale_y_continuous(expand = c(0, 0))
 print(figure_S4A)
 ```
-## mobility barplot:: type figure S4.B
+## mobility barplot:: type figure S3.B
 ```{r echo=FALSE}
 stackbar2020 <- newdata2020 %>%
   group_by(type) %>%
@@ -856,24 +883,36 @@ all_stackbar <- rbind(
 )
 figure_S4B <- ggplot(all_stackbar, aes(x = type, y = total_sum/1000000, fill = as.factor(type))) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ Year) +
-  labs(fill = "Type group", x = "Type group", y = "Mobility in million", title = "Bar plot by migration types across years") +
-   theme(plot.background = element_rect(fill = "white", colour = NA),
+  facet_wrap(~ Year, scales = 'fixed', ncol = 3) +
+  scale_fill_manual(values = c("#d9f0d3", "#a6dbad", "#74c488", "#41ab5d", "#238b45", "#00441b"),
+                    labels = c("EE: elsewhere to elsewhere", 
+                               "EW: between elsewhere & work", 
+                               "HW: between home & work",
+                               "EH: between elsewhere & home",
+                               "HH: home to home",
+                               "WW: work to work")) +
+  labs(fill = "Type group", x = "Type group", y = "Mobility in million") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
+        panel.grid.major = element_line(color = "grey90"),
         panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16))  # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 25),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  coord_cartesian(ylim = c(0, 3500)) +
+  scale_y_continuous(expand = c(0, 0))
 print(figure_S4B)
 ```
-## mobility barplot:: time figure S4.C
+## mobility barplot:: time figure S3.C
 ```{r echo=FALSE}
 newdataall <- rbind(newdata2020,newdata2021,newdata2022)
 stackbar2020 <- newdata2020 %>%
@@ -893,29 +932,33 @@ all_stackbar <- rbind(
 figure_S4C<-ggplot(all_stackbar, aes(x = time, y = total_sum / 1000000, fill = as.factor(time))) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c("#fbe4d5", "#f6b2b5", "#f07a7a", "#ee2c2c")) + 
-  facet_wrap(~ Year) +
-  labs(fill = "Migration time", x = "Migration time", y = "Mobility in million", title = "Bar plot by migration time across years") +
-   theme(plot.background = element_rect(fill = "white", colour = NA),
+  facet_wrap(~ Year, scales = 'fixed', ncol = 3) +
+  labs(fill = "Migration time", x = "Migration time", y = "Mobility in million") +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
+        panel.grid.major = element_line(color = "grey90"),
         panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16))  # facet_wrap 标题为加粗
+        strip.text = element_text(face = "bold", size = 25),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  coord_cartesian(ylim = c(0, 3500)) + 
+  scale_y_continuous(expand = c(0, 0))
 ```
-## mobility barplot:: starttime figure S4.D
+## mobility barplot:: starttime figure S3.D
 ```{r echo=FALSE}
 newdata2022$starttime <- factor(newdata2022$starttime, levels = c("0:00am~5:59am", "6:00am~11:59am", "12:00pm~5:59pm", "6:00pm~11:59pm"))
 newdata2021$starttime <- factor(newdata2021$starttime, levels = c("0:00am~5:59am", "6:00am~11:59am", "12:00pm~5:59pm", "6:00pm~11:59pm"))
 newdata2020$starttime <- factor(newdata2020$starttime, levels = c("0:00am~5:59am", "6:00am~11:59am", "12:00pm~5:59pm", "6:00pm~11:59pm"))
 
-newdataall <- rbind(newdata2020,newdata2021,newdata2022)
 stackbar2020 <- newdata2020 %>%
   group_by(starttime) %>%
   summarise(total_sum = sum(total_sum),.groups = 'drop')
@@ -930,22 +973,65 @@ all_stackbar <- rbind(
   transform(stackbar2021, Year = '2021'),
   transform(stackbar2022, Year = '2022')
 )
+all_stackbar$starttime <- factor(all_stackbar$starttime,
+                               levels = c("0:00am~5:59am", "6:00am~11:59am", "12:00pm~5:59pm", "6:00pm~11:59pm"),
+                               labels = c("12am-6am", "6am-12pm", "12pm-6pm", "6pm-12am"))
 figure_S4D <- ggplot(all_stackbar, aes(x = starttime, y = total_sum/1000000, fill = as.factor(starttime))) +
   geom_bar(stat = "identity") +
-  facet_wrap(~ Year) +
-  labs(fill = "Start time", x = "Start time", y = "Mobility in million", title = "Bar plot by start time across years") +
+  scale_fill_manual(values = c("#d9d9d9", "#bdbdbd", "#969696", "#636363")) + 
+  facet_wrap(~ Year, scales = 'fixed', ncol = 3) +
+  labs(fill = "Start time", x = "Start time", y = "Mobility in million") +
   theme(plot.background = element_rect(fill = "white", colour = NA),
         panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
-        panel.grid.major = element_line(color = NA),  # 去除主网格线
+        panel.grid.major = element_line(color = "grey90"),
         panel.grid.minor = element_line(color = NA),  # 去除次网格线
-        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
         plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
         axis.title = element_text(size = 20, face = "bold"), # Axis titles
         axis.text = element_text(size = 16, face = "bold"), # Axis text
-        legend.title = element_text(size = 16, face = "bold"), # Legend title
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
         legend.text = element_text(size = 16, face = "bold"), # Legend text
-        legend.background = element_rect(fill = "white", color = NA), # 图例背景为白色
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
         strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
-        strip.text = element_text(face = "bold", size = 16)) + # facet_wrap 标题为加粗+
-theme(axis.text.x = element_text(angle = 30))
+        strip.text = element_text(face = "bold", size = 25),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 30, vjust = 0.7)) +
+  coord_cartesian(ylim = c(0, 3500)) +
+  scale_y_continuous(expand = c(0, 0))
+```
+
+## save figures
+```{r echo=FALSE}
+# 保存 figure1 为 JPG 格式
+ggsave("../results/figure/figure1.jpg", plot = figure1, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figure2.jpg", plot = figure2, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figure3_A.jpg", plot = figure3_A, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figure3_B.jpg", plot = figure3_B, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figure4.jpg", plot = figure4, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figureS1.jpg", plot = figure_S1, device = "jpg", 
+       width = 16, height = 10, dpi = 300)
+ggsave("../results/figure/figureS2 A.travel.jpg", plot = figureS2_travel, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 B.restaurant.jpg", plot = figureS2_restaurant, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 C.shopping.jpg", plot = figureS2_shopping, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 D.medical.jpg", plot = figureS2_medical, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 E.clothing.jpg", plot = figureS2_clothing, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 F.entertainment.jpg", plot = figureS2_entertainment, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 G.education.jpg", plot = figureS2_education, width = 8.64, height = 8.99, dpi = 300)
+ggsave("../results/figure/figureS2 H.homelife.jpg", plot = figureS2_homelife, width = 8.64, height = 8.99, dpi = 300)
+
+ggsave("../results/figure/figureS3 A.migration time.jpg", plot = figure_S4C, device = "jpg", 
+       width = 13.3, height = 8.3, dpi = 300)
+ggsave("../results/figure/figureS3 B.age.jpg", plot = figure_S4A, device = "jpg", 
+       width = 13.3, height = 8.3, dpi = 300)
+ggsave("../results/figure/figureS3 C.type.jpg", plot = figure_S4B, device = "jpg", 
+       width = 13.3, height = 8.3, dpi = 300)
+ggsave("../results/figure/figureS3 D.starttime.jpg", plot = figure_S4D, device = "jpg", 
+       width = 13.3, height = 8.3, dpi = 300)
 ```
