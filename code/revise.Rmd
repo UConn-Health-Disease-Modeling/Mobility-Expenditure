@@ -1,0 +1,685 @@
+---
+title: "Exp~Mob paper code for plots and results"
+author: "Zeyu Hu"
+date: "2024-07-09"
+output: html_document
+---
+
+## data process
+```{r setup, include=FALSE}
+library(ggplot2)
+library(reshape2)
+library(sf)
+library(dplyr)
+library(broom)
+library(purrr)
+library(scales)
+library(tidyr)
+library(nlme)
+library(readxl)
+library(viridis)
+library(openxlsx)
+mobility <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/processed_mobility.csv")
+mobility$DIST <- gsub("\\.", "-", mobility$DIST)
+agg <- read.csv("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/processd_expenditure2019_2023.csv")
+# 使用merge函数合并数据
+merged_data <- merge(agg, mobility, by = c("DIST", "YEARMONTHWEEK"))
+# 添加新列 YEAR，其值是 YEARMONTHWEEK 列的前四位
+merged_data$YEAR <- substr(merged_data$YEARMONTHWEEK, 1, 4)
+merged_data$MONTH <- substr(merged_data$YEARMONTHWEEK, 6, 7)
+merged_data$YEARMONTH <- substr(merged_data$YEARMONTHWEEK,1,7)
+merged_data <- subset(merged_data, YEARMONTHWEEK != "2023")
+data2019 <- subset(merged_data, YEAR == "2019")
+data2019$EXPENDITURE <- data2019$EXPENDITURE/1644460
+data2020 <- subset(merged_data, YEAR == "2020")
+data2020$EXPENDITURE <- data2020$EXPENDITURE/1697050
+data2021 <- subset(merged_data, YEAR == "2021")
+data2021$EXPENDITURE <- data2021$EXPENDITURE/1609040
+data2022 <- subset(merged_data, YEAR == "2022")
+data2022$EXPENDITURE <- data2022$EXPENDITURE/1669400
+
+USDdata <- rbind(data2019,data2020,data2021,data2022)##in thousand dollars
+```
+
+## characteristic data process
+```{r include=FALSE}
+district_info<- read_excel("/Users/huzeyu/Desktop/UConnHealth/Mobility-Expenditure/data/Seoul_District_Info_1011.xlsx")
+district_info$DIST <- c("Gangnam-gu", "Gangdong-gu", "Gangbuk-gu", "Gangseo-gu", "Gwanak-gu", "Gwangjin-gu",
+                        "Guro-gu", "Geumcheon-gu", "Nowon-gu", "Dobong-gu", "Dongdaemun-gu", "Dongjak-gu", 
+                        "Mapo-gu", "Seodaemun-gu", "Seocho-gu", "Seongdong-gu", "Seongbuk-gu", "Songpa-gu", 
+                        "Yangcheon-gu", "Yeongdeungpo-gu", "Yongsan-gu", "Eunpyeong-gu", "Jongno-gu", "Jung-gu", 
+                        "Jungnang-gu")
+commercial_districts <- c ("Jung-gu", "Jongno-gu", "Gangnam-gu")
+noncommercial_districts <- c( "Gangdong-gu", "Gangbuk-gu", "Gangseo-gu", "Gwanak-gu", "Gwangjin-gu",
+                              "Guro-gu", "Geumcheon-gu", "Nowon-gu", "Dobong-gu", "Dongdaemun-gu", "Dongjak-gu", 
+                              "Mapo-gu", "Seodaemun-gu", "Seocho-gu", "Seongdong-gu", "Seongbuk-gu", "Songpa-gu", 
+                              "Yangcheon-gu", "Yeongdeungpo-gu", "Yongsan-gu", "Eunpyeong-gu", 
+                              "Jungnang-gu")
+
+```
+
+## diff data process
+```{r include=FALSE}
+data2019 <- data2019 %>% mutate(Week_Number = as.integer(as.factor(YEARMONTHWEEK)))
+data2019 <- data2019 %>% mutate(DIST_week = paste(DIST, Week_Number,BIZ, sep = "-"))
+data2020 <- data2020 %>% mutate(Week_Number = as.integer(as.factor(YEARMONTHWEEK)))
+data2020 <- data2020 %>% mutate(DIST_week = paste(DIST, Week_Number,BIZ, sep = "-"))
+data2021 <- data2021 %>% mutate(Week_Number = as.integer(as.factor(YEARMONTHWEEK)))
+data2021 <- data2021 %>% mutate(DIST_week = paste(DIST, Week_Number,BIZ, sep = "-"))
+data2022 <- data2022 %>% mutate(Week_Number = as.integer(as.factor(YEARMONTHWEEK)))
+data2022 <- data2022 %>% mutate(DIST_week = paste(DIST, Week_Number,BIZ, sep = "-"))
+#19 20
+combined1920 <- inner_join(data2020, data2019, by = "DIST_week", suffix = c("_2020", "_2019"))
+diff_data2020 <- combined1920 %>%
+  mutate(
+    EXPENDITURE = EXPENDITURE_2020 - EXPENDITURE_2019,
+    mobility = mobility_2020 - mobility_2019,
+    EXPENDITURE_Pchange = 100*(EXPENDITURE_2020 - EXPENDITURE_2019)/EXPENDITURE_2019
+  ) %>%
+  dplyr::select(YEARMONTHWEEK_2020, BIZ_2020,DIST_2020,YEAR_2020, EXPENDITURE, mobility,MONTH_2020,EXPENDITURE_Pchange) %>%
+  rename(
+    YEARMONTHWEEK = YEARMONTHWEEK_2020,
+    BIZ = BIZ_2020,
+    DIST = DIST_2020,
+    YEAR = YEAR_2020,
+    MONTH = MONTH_2020,
+    expPchange = EXPENDITURE_Pchange
+  )
+
+#19 21
+combined1921 <- inner_join(data2021, data2019, by = "DIST_week", suffix = c("_2021", "_2019"))
+diff_data2021 <- combined1921 %>%
+  mutate(
+    EXPENDITURE = EXPENDITURE_2021 - EXPENDITURE_2019,
+    mobility = mobility_2021 - mobility_2019,
+    EXPENDITURE_Pchange = 100*(EXPENDITURE_2021 - EXPENDITURE_2019)/EXPENDITURE_2019
+  ) %>%
+  dplyr::select(YEARMONTHWEEK_2021, BIZ_2021,DIST_2021,YEAR_2021, EXPENDITURE, mobility,MONTH_2021,EXPENDITURE_Pchange) %>%
+  rename(
+    YEARMONTHWEEK = YEARMONTHWEEK_2021,
+    BIZ = BIZ_2021,
+    DIST = DIST_2021,
+    YEAR = YEAR_2021,
+    MONTH = MONTH_2021,
+    expPchange = EXPENDITURE_Pchange
+  )
+
+#19 22
+combined1922 <- inner_join(data2022, data2019, by = "DIST_week", suffix = c("_2022", "_2019"))
+diff_data2022 <- combined1922 %>%
+  mutate(
+    EXPENDITURE = EXPENDITURE_2022 - EXPENDITURE_2019,
+    mobility = mobility_2022 - mobility_2019,
+    EXPENDITURE_Pchange = 100*(EXPENDITURE_2022 - EXPENDITURE_2019)/EXPENDITURE_2019
+  ) %>%
+  dplyr::select(YEARMONTHWEEK_2022, BIZ_2022,DIST_2022,YEAR_2022, EXPENDITURE, mobility,MONTH_2022,EXPENDITURE_Pchange) %>%
+  rename(
+    YEARMONTHWEEK = YEARMONTHWEEK_2022,
+    BIZ = BIZ_2022,
+    DIST = DIST_2022,
+    YEAR = YEAR_2022,
+    MONTH = MONTH_2022,
+    expPchange = EXPENDITURE_Pchange
+  )
+
+USDdatadiff <- rbind(diff_data2020,diff_data2021,diff_data2022)
+USDdatadiff$YEARMONTH <-  paste0(USDdatadiff$YEAR, "-", USDdatadiff$MONTH)
+##USDdatadiffSeoul doesn't have districts column
+USDdatadiffSeoul <- USDdatadiff %>%
+  group_by(YEARMONTHWEEK, BIZ) %>%
+  summarise(EXPENDITURE = sum(EXPENDITURE),
+            mobility = sum(mobility))
+USDdatadiffSeoul$YEARMONTH <- substr(USDdatadiffSeoul$YEARMONTHWEEK,1,7)
+USDdatadiffSeoul$YEARMONTH <- gsub("-","",USDdatadiffSeoul$YEARMONTH)
+```
+
+
+## barplot data process
+```{r include=FALSE}
+aggregate_data <- USDdata %>%
+  group_by(BIZ, YEAR) %>%
+  summarise(overallexp = sum(EXPENDITURE, na.rm = TRUE),
+            overallmobility = sum(mobility, na.rm = TRUE)) %>%
+  ungroup()
+
+# 定义一个函数来针对特定地区分组求和
+summarize_by_group <- function(data, districts) {
+  data %>%
+    filter(DIST %in% districts) %>%
+    group_by(BIZ, YEAR) %>%
+    summarise(exp = sum(EXPENDITURE, na.rm = TRUE),
+              mobility = sum(mobility, na.rm = TRUE)) %>%
+    ungroup()
+}
+
+# 计算每个特定地区条件的总和
+commercial_data <- summarize_by_group(USDdata, commercial_districts)
+noncommercial_data <- summarize_by_group(USDdata, noncommercial_districts)
+
+# 合并所有数据
+barplotdata <- aggregate_data %>%
+  left_join(commercial_data, by = c("BIZ", "YEAR")) %>%
+  left_join(noncommercial_data, by = c("BIZ", "YEAR"))
+barplotdata <- barplotdata %>%
+  mutate(BIZ = case_when(
+    BIZ == "restaurant" ~ "restaurant",
+    BIZ == "entertainment" ~ "entertainment",
+    BIZ == "clothing" ~ "clothing",
+    BIZ == "medical" ~ "medical",
+    BIZ == "education" ~ "education",
+    BIZ == "shopping" ~ "shopping",
+    BIZ == "homelife" ~ "home appliances",
+    BIZ == "travel" ~ "travel"
+  ))
+restaurant_data <- subset(barplotdata, BIZ =="restaurant")
+entertainment_data <- subset(barplotdata, BIZ =="entertainment")
+medical_data <- subset(barplotdata, BIZ =="medical")
+clothing_data <- subset(barplotdata, BIZ =="clothing")
+travel_data <- subset(barplotdata, BIZ =="travel")
+education_data <- subset(barplotdata, BIZ =="education")
+shopping_data <- subset(barplotdata, BIZ =="shopping")
+homelife_data <- subset(barplotdata, BIZ =="home appliances")
+```
+
+## figure 1 Overall trend of excess expenditure and mobility
+```{r echo=FALSE}
+all_diff_Seoul <- USDdatadiffSeoul %>%
+  group_by(YEARMONTHWEEK) %>%
+  summarise(diffexp = sum(EXPENDITURE, na.rm = TRUE),
+            diffmobility = (sum(mobility, na.rm = TRUE))/8) %>%
+  ungroup() 
+all_diff_Seoul$YEARMONTH <- substr(all_diff_Seoul$YEARMONTHWEEK,1,7)
+scale_all <- max(abs(all_diff_Seoul$diffmobility))/max(abs(all_diff_Seoul$diffexp))
+all_diff_Seoul <- all_diff_Seoul %>%
+  group_by(YEARMONTH) %>%
+  mutate(x_label = if_else(row_number() == 1, as.character(YEARMONTH), "")) %>%
+  ungroup()
+# 将 YEARMONTH 的最后两位数字添加到 x_label 中
+all_diff_Seoul$x_label <- paste0(substr(all_diff_Seoul$x_label, 6, 7))
+
+# 绘图代码
+figure1 <- ggplot(all_diff_Seoul, aes(x = YEARMONTHWEEK)) + 
+  geom_line(aes(y = diffmobility/scale_all, group = 1, colour = "Mobility difference"), size = 1) +
+  geom_line(aes(y = diffexp, group = 1, colour = "Expenditure difference"), size = 1) +
+  scale_colour_manual("", 
+                      breaks = c("Mobility difference", "Expenditure difference"),
+                      values = c("red", "blue")) +  # Use black and blue for the lines
+  scale_y_continuous(name = "Expenditure difference(in thousand USD)",
+                     sec.axis = sec_axis(~ . *scale_all/1000, name = "Mobility difference(in thousand)")) + 
+  labs(title = "Difference in mobility and all expenditure based on 2019 over the next 3 years",
+       x = "Year-Month") + 
+  theme(axis.text.x = element_text(size = 14)) +
+  geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2020-02-02"), color = "black") + 
+  annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2020-02-02"), y = 0, label = "Introduction of COVID-19\nwith social distancing policies", angle = 0, hjust = 0.1, vjust = -4, size = 5,fontface = "bold") + 
+  geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2021-03-01"), color = "black") + 
+  annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2021-03-01"), y = 0, label = "Introduction of\nvaccination", angle = 0, hjust = 0.5, vjust = -4, size = 5,fontface = "bold") + 
+  geom_vline(xintercept = which(all_diff_Seoul$YEARMONTHWEEK == "2022-02-01"), color = "black") + 
+  annotate("text", x = which(all_diff_Seoul$YEARMONTHWEEK == "2022-02-01"), y = 0, label = "Relaxing of social\ndistancing policies", angle = 0, hjust = 0.5, vjust = -4, size = 5,fontface = "bold") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey", size = 1.4) + 
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),  
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),  # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5))+ 
+  scale_x_discrete(labels = all_diff_Seoul$x_label) +  # 使用新的 x_label 作为 x 轴标签
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))], 
+           y = -Inf, yend = -Inf, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("text", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1] + 
+             (which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020"))] - 
+                which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2020")[1]) / 2, 
+           y = -Inf, label = "2020", vjust = -2, size = 5, fontface = "bold")+
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021"))], 
+           y = -Inf, yend = -Inf, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[1], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021"))], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021"))], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("text", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[1] + 
+             (which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021"))] - 
+                which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2021")[1]) / 2, 
+           y = -Inf, label = "2021", vjust = -2, size = 5, fontface = "bold") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022"))], 
+           y = -Inf, yend = -Inf, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("segment", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022"))], 
+           xend = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022"))], 
+           y = -Inf, yend = -Inf + 0.1, size = 1, color = "black") +
+  annotate("text", x = which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1] + 
+             (which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[length(which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022"))] - 
+                which(substr(all_diff_Seoul$YEARMONTHWEEK, 1, 4) == "2022")[1]) / 2, 
+           y = -Inf, label = "2022", vjust = -2, size = 5, fontface = "bold") 
+```
+
+## figure 2
+```{r echo=FALSE}
+barplotdata <- barplotdata %>%
+  mutate(`BIZ` = paste0(toupper(substr(`BIZ`, 1, 1)), tolower(substr(`BIZ`, 2, nchar(`BIZ`)))))
+# 定义颜色向量
+custom_colors <- c(
+  "Travel" = "lightblue",
+  "Restaurant" = "red",          
+  "Shopping" = "lightgrey",
+  "Medical" = "yellow",          
+  "Clothing" = "blue",
+  "Entertainment" = "green",
+  "Education" = "orange",
+  "Home appliances" = "purple"
+)
+barplotdata$BIZ <- factor(barplotdata$BIZ, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
+
+figure2 <- ggplot(barplotdata, aes(x = YEAR, y = overallexp/1000, fill = BIZ)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.5) +
+  facet_wrap(~BIZ, scales = 'fixed', ncol = 8) +
+  labs(title = "Total expenditure by years and business categories",
+       y = "Expenditure in thousand USD",
+       x = "Year") +  # 修改图例标题
+  scale_fill_manual(name = "Category",values = custom_colors) +
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", colour = NA),  # 子图背景颜色
+        panel.grid.major = element_line(color = "grey90"),
+        panel.grid.minor = element_line(color = NA),  # 去除次网格线
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        strip.background = element_rect(fill = "white", color = "white"), # facet_wrap 背景为白色
+        strip.text = element_text(face = "bold", size = 16),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5)) + # facet_wrap 标题为加粗
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  coord_cartesian(ylim = c(0, NA)) +
+  scale_y_continuous(expand = c(0, 0))
+```
+
+## figure 3_A/B Quadrant plot
+```{r echo=FALSE}
+data2019$YEARMONTHWEEK <- as.factor(data2019$YEARMONTHWEEK)
+data2020$YEARMONTHWEEK <- as.factor(data2020$YEARMONTHWEEK)
+data2022$YEARMONTHWEEK <- as.factor(data2022$YEARMONTHWEEK)
+
+data2019overall <- data2019 %>%
+  group_by(DIST) %>%
+  summarize(
+    EXPENDITURE = sum(EXPENDITURE),
+    mobility = sum(mobility) / 8
+  )
+data2020overall <- data2020 %>%
+  group_by(DIST) %>%
+  summarize(
+    EXPENDITURE = sum(EXPENDITURE),
+    mobility = sum(mobility) / 8
+  )
+data2022overall <- data2022 %>%
+  group_by(DIST) %>%
+  summarize(
+    EXPENDITURE = sum(EXPENDITURE),
+    mobility = sum(mobility) / 8
+  )
+
+
+data_change_rate_2019_2020 <- data2019overall %>%
+  dplyr::select(DIST, EXPENDITURE2019 = EXPENDITURE, mobility2019 = mobility) %>%
+  inner_join(
+    data2020overall %>% dplyr::select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility),
+    by = "DIST"
+  ) %>%
+  mutate(
+    EXPENDITURE_change_rate = (EXPENDITURE2020 - EXPENDITURE2019) / EXPENDITURE2019 * 100,
+    mobility_change_rate = (mobility2020 - mobility2019) / mobility2019 * 100
+  )
+data_change_rate_2019_2020 <- data_change_rate_2019_2020 %>%
+  inner_join(district_info, by = "DIST")
+data_change_rate_2019_2020$DIST <- gsub("-gu", "", data_change_rate_2019_2020$DIST)
+
+
+data_change_rate_2020_2022 <- data2020overall %>%
+  dplyr::select(DIST, EXPENDITURE2020 = EXPENDITURE, mobility2020 = mobility) %>%
+  inner_join(
+    data2022overall %>% dplyr::select(DIST, EXPENDITURE2022 = EXPENDITURE, mobility2022 = mobility),
+    by = "DIST"
+  ) %>%
+  mutate(
+    EXPENDITURE_change_rate = (EXPENDITURE2022 - EXPENDITURE2020) / EXPENDITURE2020 * 100,
+    mobility_change_rate = (mobility2022 - mobility2020) / mobility2020 * 100
+  )
+data_change_rate_2020_2022 <- data_change_rate_2020_2022 %>%
+  inner_join(district_info, by = "DIST")
+data_change_rate_2020_2022$DIST <- gsub("-gu", "", data_change_rate_2020_2022$DIST)
+
+data_change_rate_2019_2022 <- data2019overall %>%
+  dplyr::select(DIST, EXPENDITURE2019 = EXPENDITURE, mobility2019 = mobility) %>%
+  inner_join(
+    data2022overall %>% dplyr::select(DIST, EXPENDITURE2022 = EXPENDITURE, mobility2022 = mobility),
+    by = "DIST"
+  ) %>%
+  mutate(
+    EXPENDITURE_change_rate = (EXPENDITURE2022 - EXPENDITURE2019) / EXPENDITURE2019 * 100,
+    mobility_change_rate = (mobility2022 - mobility2019) / mobility2019 * 100
+  )
+data_change_rate_2019_2022 <- data_change_rate_2019_2022 %>%
+  inner_join(district_info, by = "DIST")
+data_change_rate_2019_2022$DIST <- gsub("-gu", "", data_change_rate_2019_2022$DIST)
+data_change_rate_2019_2022$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
+data_change_rate_2019_2020$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
+data_change_rate_2020_2022$totalpop_inK <- data_change_rate_2019_2022$Totalpop/1000
+
+figure3_A <- ggplot(data_change_rate_2019_2020, aes(x = mobility_change_rate,
+                                       y = EXPENDITURE_change_rate,
+                                       label = DIST,
+                                       size = totalpop_inK,
+                                       color = Daytime_pop_percent)) + 
+  scale_size_continuous(range = c(5, 15), name = "Total Population\n(in thousand)") +   # 添加size的图例名称
+  geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
+  scale_color_gradient(low = "gray", high = "darkblue", name = "Daytime Population %") +   # 添加color的图例名称
+  geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
+  geom_vline(xintercept = 0, color = "black") + 
+  geom_hline(yintercept = 0, color = "black") + 
+  labs(x = "Mobility change rate (%)",
+       y = "Expenditure change rate (%)") +  # 添加标题
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5)) +
+  guides(size = guide_legend(title.theme = element_text(face = "bold")),  # 调整size图例标题的字体
+         color = guide_colorbar(title.theme = element_text(face = "bold")))  # 调整color图例标题的字体
+
+figure3_B <- ggplot(data_change_rate_2019_2022, aes(x = mobility_change_rate,
+                                       y = EXPENDITURE_change_rate,
+                                       label = DIST,
+                                       size = totalpop_inK,
+                                       color = Daytime_pop_percent)) + 
+  scale_size_continuous(range = c(5, 15), name = "Total Population\n(in thousand)") +   # 添加size的图例名称
+  geom_point(alpha = 0.7) +  # Use default color scaling with alpha for transparency
+  scale_color_gradient(low = "gray", high = "darkblue", name = "Daytime Population %") +   # 添加color的图例名称
+  geom_text(vjust = -1.2, hjust = 0.5, size = 6, color = "black", fontface = "bold") +  # Fixed label size and color
+  geom_vline(xintercept = 0, color = "black") + 
+  geom_hline(yintercept = 0, color = "black") + 
+  labs(x = "Mobility change rate (%)",
+       y = "Expenditure change rate (%)") +  # 添加标题
+  theme(panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),
+        plot.title = element_text(size = 25, face = "bold", hjust = 0.5), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, size = 0.5)) +
+  guides(size = guide_legend(title.theme = element_text(face = "bold")),  # 调整size图例标题的字体
+         color = guide_colorbar(title.theme = element_text(face = "bold")))  # 调整color图例标题的字体
+```
+
+## log-log models 
+```{r echo=FALSE}
+library(dplyr)
+library(tidyr)
+library(nlme)
+library(purrr)
+
+# ===============================
+# 1. 构造 total DIST 和 allBIZ
+# ===============================
+USDdata_totalDIST <- USDdata %>%
+  group_by(BIZ, YEARMONTHWEEK, YEAR, MONTH, YEARMONTH) %>%
+  summarise(
+    EXPENDITURE = sum(EXPENDITURE, na.rm = TRUE),
+    mobility    = sum(mobility, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(DIST = "total")
+
+USDdata_with_totalDIST <- bind_rows(USDdata, USDdata_totalDIST)
+
+USDdata_allBIZ <- USDdata_with_totalDIST %>%
+  group_by(DIST, YEARMONTHWEEK, YEAR, MONTH, YEARMONTH) %>%
+  summarise(
+    EXPENDITURE = sum(EXPENDITURE, na.rm = TRUE),
+    mobility    = sum(mobility, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(BIZ = "allBIZ")
+
+USDdata_with_totalBIZDIST <- bind_rows(
+  USDdata_with_totalDIST,
+  USDdata_allBIZ
+)
+
+# ===============================
+# 2. 业务类别
+# ===============================
+biz_categories <- unique(USDdata_with_totalBIZDIST$BIZ)
+
+all_years_results_AR1 <- list()
+coefficients_list_AR1 <- list()
+
+# ===============================
+# 3. 主循环
+# ===============================
+for (biz in biz_categories) {
+  
+  # ---- 每年总支出（用于后续特征合并）----
+  yearly_sums <- list()
+  
+  for (year in 2019:2022) {
+    yearly_data <- USDdata_with_totalBIZDIST %>%
+      filter(YEAR == year, BIZ == biz) %>%
+      group_by(DIST) %>%
+      summarise(sumexp = sum(EXPENDITURE, na.rm = TRUE), .groups = "drop")
+    
+    colname <- paste0(year, "sumexp")
+    names(yearly_data)[2] <- colname
+    yearly_sums[[as.character(year)]] <- yearly_data
+  }
+  
+  sumexp_biz <- reduce(yearly_sums, full_join, by = "DIST")
+  
+  # ---- 每年 AR(1) log-log 回归 ----
+  all_years_coefficients_AR1 <- list()
+  
+  for (year in 2019:2022) {
+    
+    data_year_biz <- USDdata_with_totalBIZDIST %>%
+      filter(BIZ == biz, YEAR == year)
+    
+    coefficients_biz_year_AR1 <- data.frame(
+      DIST = character(),
+      slope = numeric(),
+      std_error = numeric(),
+      p_value = numeric(),
+      stringsAsFactors = FALSE
+    )
+    
+    for (dist in unique(data_year_biz$DIST)) {
+      
+      subset_data <- data_year_biz %>%
+        filter(DIST == dist) %>%
+        arrange(YEARMONTH) %>%
+        mutate(
+          time_index = 1:n(),
+          log_exp = log(EXPENDITURE),
+          log_mob = log(mobility)
+        )
+      
+      # 基本质量控制
+      if (
+        nrow(subset_data) < 6 ||
+        any(!is.finite(subset_data$log_exp)) ||
+        any(!is.finite(subset_data$log_mob))
+      ) next
+      
+      model_AR1 <- try(
+        gls(
+          log_exp ~ log_mob,
+          data = subset_data,
+          correlation = corAR1(form = ~ time_index)
+        ),
+        silent = TRUE
+      )
+      
+      # 若 AR(1) 失败 → 回退为无相关 GLS
+      if (inherits(model_AR1, "try-error")) {
+        model_AR1 <- gls(
+          log_exp ~ log_mob,
+          data = subset_data
+        )
+      }
+      
+      slope_info <- summary(model_AR1)$tTable["log_mob", ]
+      
+      coefficients_biz_year_AR1 <- rbind(
+        coefficients_biz_year_AR1,
+        data.frame(
+          DIST = dist,
+          slope = slope_info["Value"],
+          std_error = slope_info["Std.Error"],
+          p_value = slope_info["p-value"]
+        )
+      )
+    }
+    
+    all_years_coefficients_AR1[[as.character(year)]] <- coefficients_biz_year_AR1
+  }
+  
+  # ---- 重命名列（区分年份）----
+  for (year in c("2019", "2020", "2021", "2022")) {
+    names(all_years_coefficients_AR1[[year]])[2:4] <-
+      paste0(names(all_years_coefficients_AR1[[year]])[2:4], year)
+  }
+  
+  # ---- 合并 4 年系数 ----
+  coefficients_biz_AR1 <- Reduce(
+    function(x, y) merge(x, y, by = "DIST", all = TRUE),
+    all_years_coefficients_AR1
+  )
+  
+  # ---- 合并区县特征 ----
+  biz_slope_characteristic_AR1 <- coefficients_biz_AR1 %>%
+    left_join(sumexp_biz, by = "DIST") %>%
+    left_join(district_info, by = "DIST")
+  
+  # ---- 转成长表 ----
+  long_df_biz_AR1 <- biz_slope_characteristic_AR1 %>%
+    pivot_longer(
+      cols = starts_with("slope") | starts_with("std_error") | starts_with("p_value"),
+      names_to = c("Measure", "Year"),
+      names_pattern = "(.*)(2019|2020|2021|2022)",
+      values_to = "Value"
+    ) %>%
+    pivot_wider(names_from = Measure, values_from = Value)
+  
+  long_df_biz_AR1$BIZ <- biz
+  
+  all_years_results_AR1[[biz]] <- long_df_biz_AR1
+  coefficients_list_AR1[[biz]] <- coefficients_biz_AR1
+}
+
+# ===============================
+# 4. 单独保存各业务结果
+# ===============================
+coefficients_travel_AR1        <- coefficients_list_AR1[["travel"]]
+coefficients_restaurant_AR1    <- coefficients_list_AR1[["restaurant"]]
+coefficients_shopping_AR1      <- coefficients_list_AR1[["shopping"]]
+coefficients_medical_AR1       <- coefficients_list_AR1[["medical"]]
+coefficients_clothing_AR1      <- coefficients_list_AR1[["clothing"]]
+coefficients_entertainment_AR1 <- coefficients_list_AR1[["entertainment"]]
+coefficients_education_AR1     <- coefficients_list_AR1[["education"]]
+coefficients_homelife_AR1      <- coefficients_list_AR1[["homelife"]]
+coefficients_allBIZ_AR1        <- coefficients_list_AR1[["allBIZ"]]
+```
+
+## figure 4 AR1
+```{r echo=FALSE}
+coefficients_restaurant_AR1$category <- 'restaurant'
+coefficients_entertainment_AR1$category <- 'entertainment'
+coefficients_clothing_AR1$category <- 'clothing'
+coefficients_medical_AR1$category <- 'medical'
+coefficients_travel_AR1$category <- 'travel'
+coefficients_education_AR1$category <- 'education'
+coefficients_shopping_AR1$category <- 'shopping'
+coefficients_homelife_AR1$category <- 'home appliances'
+newdata_AR1 <- bind_rows(coefficients_restaurant_AR1, coefficients_entertainment_AR1,coefficients_clothing_AR1,
+                     coefficients_medical_AR1, coefficients_travel_AR1, coefficients_education_AR1,
+                     coefficients_shopping_AR1, coefficients_homelife_AR1)
+
+newdata_AR1 <- newdata_AR1 %>% 
+  gather(key = "year", value = "slope", slope2019, slope2020, slope2021, slope2022) %>% 
+  mutate(year = sub("slope", "", year)) # 移除 'slope' 文字，只保留年份
+newdata_AR1$category <- paste0(toupper(substr(newdata_AR1$category, 1, 1)), tolower(substr(newdata_AR1$category, 2, nchar(newdata_AR1$category))))
+newdata_AR1$category <- factor(newdata_AR1$category, levels = c("Travel", "Restaurant", "Shopping", "Medical", "Clothing", "Entertainment", "Education", "Home appliances"))
+figure4 <- ggplot(newdata_AR1, aes(x = year, y = slope, fill = category)) + 
+  geom_boxplot() +
+  facet_wrap(~category, scales = 'fixed', ncol = 8) +  # 使用DIST变量创建分面，并允许每个分面有自己的y轴范围
+  #theme_minimal() +
+  labs(title = "Elasticity by year and business sectors in all districts", 
+       x = "Year", 
+       y = "Slope: consumption elasticity",
+       fill = "Category") +
+  scale_fill_manual(values = custom_colors) +
+  geom_hline(yintercept = 0, color = "red",linetype = "dashed", size = 1.3)+
+  ylim(-1,1.5)+
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),  
+        text = element_text(size = 20, face = "bold"), # Default text size and style for the entire plot
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),  # Title
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        legend.title = element_text(size = 18, face = "bold"), # Legend title
+        legend.text = element_text(size = 16, face = "bold"), # Legend text
+        legend.position = "bottom", # 图例位置设置为底部
+        legend.direction = "horizontal", # 图例横向排列
+        legend.box = "horizontal",
+        axis.text.x = element_text(angle = 60, hjust = 1),
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5))
+
+```
+
+## figure S1 daytime
+```{r echo=FALSE}
+daytimedata <- district_info[,c(1,3)]
+# 为了使条形图按Daytime_pop_percent的值排序，首先需要将DIST转换为因子，并按Daytime_pop_percent排序
+daytimedata$DIST <- factor(daytimedata$DIST, levels = daytimedata$DIST[order(daytimedata$Daytime_pop_percent, decreasing = TRUE)])
+
+figure_S1 <- ggplot(daytimedata, aes(x = DIST, y = Daytime_pop_percent, fill = Daytime_pop_percent)) +
+  geom_col() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  theme_bw(base_size = 20) +  # 设置基础字体大小
+  labs(x = "District",
+       y = "Daytime population index",
+       title = "Daytime population index by district") +  # 添加标题
+  theme(plot.background = element_rect(fill = "white", colour = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "grey90"),  
+        text = element_text(size = 24, face = "bold"), # Default text size and style for the entire plot
+        plot.title = element_text(size = 20, face = "bold"), # Title
+        axis.title = element_text(size = 20, face = "bold"), # Axis titles
+        axis.text = element_text(size = 16, face = "bold"), # Axis text
+        axis.text.x = element_text(angle = 60, hjust = 1, size = 18, face = "bold"),  
+        legend.position = "none" 
+)
+print(figure_S1)
+```
